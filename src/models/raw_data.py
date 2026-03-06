@@ -13,4 +13,5 @@ class RawData(Base):
     author: Mapped[str]
     summary: Mapped[str]
     published_at: Mapped[datetime]
+    ingested_at: Mapped[datetime]
     content: Mapped[str]
