@@ -1,7 +1,7 @@
-from sqlalchemy.orm import Mapped, declarative_base, mapped_column
+from sqlalchemy.orm import Mapped, DeclarativeBase, declarative_base, mapped_column
 from datetime import datetime
 
-Base = declarative_base()
+Base: DeclarativeBase = declarative_base()
 
 class RawData(Base):
     __tablename__ = "raw_data"

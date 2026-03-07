@@ -1,16 +1,18 @@
-from models.raw_data import RawData
-from config import RSS_FEED
+from src.models.raw_data import Base, RawData
+from src.config import RSS_FEED, DB_URL
 
 import hashlib
 import requests
 import trafilatura
+import sqlalchemy as sa
+from sqlalchemy.orm import sessionmaker
 import feedparser as fp
 from feedparser import FeedParserDict
 from datetime import datetime
 
 
-def fetch_articles():
-    articles: list[RawData] = []
+def fetch_articles() -> list[RawData]:
+    articles = []
 
     for source_name, url in RSS_FEED.items():
         feed = fp.parse(url)
@@ -36,9 +38,9 @@ def fetch_articles():
 
 
 def fetch_article_content(url: str) -> str | None:
-    response = requests.get(url, timeout=10)
-
-    if response.status_code != 200:
+    try:
+        response = requests.get(url, timeout=10)
+    except Exception:
         return None
     
     return trafilatura.extract(response.text)
@@ -54,5 +56,12 @@ def parse_date(entry: FeedParserDict) -> datetime | None:
     return None
 
 
-def deduplicate_articles():
-    print("Deduplicating articles...")
+def load_articles_to_database(articles: list[RawData]) -> None:
+    db = sa.create_engine(DB_URL)
+    Session = sessionmaker(bind=db)
+    Base.metadata.create_all(db)
+
+    with Session() as session:
+        for article in articles:
+            session.add(article)
+            session.commit()
