@@ -1,8 +1,12 @@
 from src.models.raw_data import Base, RawData
-from src.config import RSS_FEED, DB_URL
+from src.config import RSS_FEED, MAX_CONCURRENT, DB_URL
+from src.utils import run_async
 
 import hashlib
-import requests
+import asyncio
+from asyncio import Semaphore
+import aiohttp
+from aiohttp import ClientSession
 import trafilatura
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
@@ -11,48 +15,61 @@ from feedparser import FeedParserDict
 from datetime import datetime
 
 
-def fetch_articles() -> list[RawData]:
+@run_async
+async def fetch_articles() -> list[RawData]:
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT)
     articles = []
 
-    for source_name, url in RSS_FEED.items():
-        feed = fp.parse(url)
+    for source_name, source_url in RSS_FEED.items():
+        feed = fp.parse(source_url)
         ingestion_timestamp = datetime.now()
+
+        async with aiohttp.ClientSession() as session:
+            tasks = []
+            for article_url in [article.get("link") for article in feed["entries"]]:
+                task = asyncio.create_task(fetch_article_content(session, semaphore, article_url))
+                tasks.append(task)
+            contents = await asyncio.gather(*tasks)
         
-        for entry in feed["entries"]:
-            article_url = entry.get("link")
+        for article, content in zip(feed["entries"], contents):
+            article_url = article.get("link")
             if article_url:
                 article = RawData(
                     article_id=generate_article_id(article_url),
-                    title=entry.get("title"),
+                    title=article.get("title"),
                     url=article_url,
                     source_name=source_name,
-                    author=entry.get("author"),
-                    summary=entry.get("summary"),
-                    published_at=parse_date(entry),
+                    author=article.get("author"),
+                    summary=article.get("description"),
+                    published_at=parse_date(article),
                     ingested_at=ingestion_timestamp,
-                    content=fetch_article_content(article_url)
+                    content=content
                 )
             articles.append(article)
 
     return articles
 
 
-def fetch_article_content(url: str) -> str | None:
-    try:
-        response = requests.get(url, timeout=10)
-    except Exception:
-        return None
-    
-    return trafilatura.extract(response.text)
+async def fetch_article_content(session: ClientSession, semaphore: Semaphore, url: str) -> str | None:
+    async with semaphore:
+        try:
+            async with session.get(url, timeout=10) as resp:
+                if resp.status != 200:
+                    return None
+                html = await resp.text()
+        except Exception:
+            return None
+        
+        return trafilatura.extract(html)
 
 
 def generate_article_id(url: str) -> str:
     return hashlib.md5(url.encode()).hexdigest()
 
 
-def parse_date(entry: FeedParserDict) -> datetime | None:
-    if entry.get("published_parsed"):
-        return datetime(*entry["published_parsed"][:6])
+def parse_date(article: FeedParserDict) -> datetime | None:
+    if article.get("published_parsed"):
+        return datetime(*article["published_parsed"][:6])
     return None
 
 
