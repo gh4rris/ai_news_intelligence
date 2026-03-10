@@ -1,7 +1,8 @@
-from src.config import RSS_FEED, MAX_CONCURRENT, REQUEST_TIMEOUT, DB_URL
-from src.utils import run_async
-from src.models.raw_data import RawData
-from src.database import Session
+from config import RSS_FEED, MAX_CONCURRENT, REQUEST_TIMEOUT
+from utils import run_async
+from models import RawDataModel
+from schemas.raw_data import RawData
+from database import Session
 
 import hashlib
 import asyncio
@@ -75,7 +76,7 @@ def parse_date(article: FeedParserDict) -> datetime | None:
 
 def load_articles_to_database(articles: list[RawData]) -> None:
     with Session() as session:
-        statement = insert(RawData).values(articles)
+        statement = insert(RawDataModel).values([article.model_dump() for article in articles])
         statement = statement.on_conflict_do_nothing(index_elements=["url"])
         session.execute(statement)
         session.commit()

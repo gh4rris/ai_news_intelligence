@@ -1,4 +1,4 @@
-from src.ingestion import fetch_articles, load_articles_to_database
+from ingestion import fetch_articles, load_articles_to_database
 
 from airflow.sdk import DAG, task
 from datetime import datetime

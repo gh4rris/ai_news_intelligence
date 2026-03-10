@@ -1,11 +1,11 @@
-from src.database import Base
+from . import Base
 
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Text, String, DateTime
 from datetime import datetime
 
 
-class RawData(Base):
+class RawDataModel(Base):
     __tablename__ = "raw_data"
 
     article_id: Mapped[str] = mapped_column(primary_key=True)
