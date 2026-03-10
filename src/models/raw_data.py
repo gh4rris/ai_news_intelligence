@@ -1,17 +1,19 @@
-from sqlalchemy.orm import Mapped, DeclarativeBase, declarative_base, mapped_column
+from src.database import Base
+
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Text, String, DateTime
 from datetime import datetime
 
-Base: DeclarativeBase = declarative_base()
 
 class RawData(Base):
     __tablename__ = "raw_data"
 
     article_id: Mapped[str] = mapped_column(primary_key=True)
-    title: Mapped[str]
-    url: Mapped[str]
-    source_name: Mapped[str]
-    author: Mapped[str]
-    summary: Mapped[str]
-    published_at: Mapped[datetime]
-    ingested_at: Mapped[datetime]
-    content: Mapped[str]
+    title: Mapped[str] = mapped_column(Text)
+    url: Mapped[str] = mapped_column(String, unique=True)
+    source_name: Mapped[str] = mapped_column(String)
+    author: Mapped[str] = mapped_column(String)
+    summary: Mapped[str] = mapped_column(Text)
+    published_at: Mapped[datetime] = mapped_column(DateTime)
+    ingested_at: Mapped[datetime] = mapped_column(DateTime)
+    content: Mapped[str] = mapped_column(Text)

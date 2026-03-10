@@ -1,6 +1,7 @@
-from src.models.raw_data import Base, RawData
-from src.config import RSS_FEED, MAX_CONCURRENT, DB_URL
+from src.config import RSS_FEED, MAX_CONCURRENT, REQUEST_TIMEOUT, DB_URL
 from src.utils import run_async
+from src.models.raw_data import RawData
+from src.database import Session
 
 import hashlib
 import asyncio
@@ -8,8 +9,7 @@ from asyncio import Semaphore
 import aiohttp
 from aiohttp import ClientSession
 import trafilatura
-import sqlalchemy as sa
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.dialects.postgresql import insert
 import feedparser as fp
 from feedparser import FeedParserDict
 from datetime import datetime
@@ -53,7 +53,7 @@ async def fetch_articles() -> list[RawData]:
 async def fetch_article_content(session: ClientSession, semaphore: Semaphore, url: str) -> str | None:
     async with semaphore:
         try:
-            async with session.get(url, timeout=10) as resp:
+            async with session.get(url, timeout=REQUEST_TIMEOUT) as resp:
                 if resp.status != 200:
                     return None
                 html = await resp.text()
@@ -74,11 +74,8 @@ def parse_date(article: FeedParserDict) -> datetime | None:
 
 
 def load_articles_to_database(articles: list[RawData]) -> None:
-    db = sa.create_engine(DB_URL)
-    Session = sessionmaker(bind=db)
-    Base.metadata.create_all(db)
-
     with Session() as session:
-        for article in articles:
-            session.add(article)
-            session.commit()
+        statement = insert(RawData).values(articles)
+        statement = statement.on_conflict_do_nothing(index_elements=["url"])
+        session.execute(statement)
+        session.commit()
