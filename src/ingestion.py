@@ -10,6 +10,7 @@ from asyncio import Semaphore
 import aiohttp
 from aiohttp import ClientSession
 import trafilatura
+import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import insert
 import feedparser as fp
 from feedparser import FeedParserDict
@@ -18,37 +19,67 @@ from datetime import datetime
 
 @run_async
 async def fetch_articles() -> list[RawData]:
-    semaphore = asyncio.Semaphore(MAX_CONCURRENT)
     articles = []
+
+    feed_entries = fetch_feed_entries()
+    contents = await fetch_contents(feed_entries)
+    
+    ingestion_timestamp = datetime.now()
+    for entry, content in zip(feed_entries, contents):
+        article_url = entry.get("link")
+        if article_url:
+            article = RawData(
+                article_id=generate_article_id(article_url),
+                title=entry.get("title"),
+                url=article_url,
+                source_name=entry.get("source"),
+                author=entry.get("author"),
+                summary=entry.get("description"),
+                published_at=parse_date(entry),
+                ingested_at=ingestion_timestamp,
+                content=content
+            )
+        articles.append(article)
+
+    return articles
+
+
+def fetch_feed_entries() -> list[FeedParserDict]:
+    feed_entries = []
 
     for source_name, source_url in RSS_FEED.items():
         feed = fp.parse(source_url)
-        ingestion_timestamp = datetime.now()
+        feed_urls = [entry.get("link", "") for entry in feed["entries"]]
+        existing_urls = get_existing_urls(feed_urls)
+        new_entries = [entry for entry in feed["entries"] if entry.get("link") not in existing_urls]
 
-        async with aiohttp.ClientSession() as session:
-            tasks = []
-            for article_url in [article.get("link") for article in feed["entries"]]:
-                task = asyncio.create_task(fetch_article_content(session, semaphore, article_url))
-                tasks.append(task)
-            contents = await asyncio.gather(*tasks)
+        for entry in new_entries:
+            entry["source"] = source_name
+        feed_entries.extend(new_entries)
+
+    return feed_entries
+
+
+def get_existing_urls(urls: list[str]) -> set[str]:
+    with Session() as session:
+        statement = sa.select(RawDataModel.url).where(RawDataModel.url.in_(urls))
+        result = session.execute(statement).scalars().all()
         
-        for article, content in zip(feed["entries"], contents):
-            article_url = article.get("link")
-            if article_url:
-                article = RawData(
-                    article_id=generate_article_id(article_url),
-                    title=article.get("title"),
-                    url=article_url,
-                    source_name=source_name,
-                    author=article.get("author"),
-                    summary=article.get("description"),
-                    published_at=parse_date(article),
-                    ingested_at=ingestion_timestamp,
-                    content=content
-                )
-            articles.append(article)
+    return set(result)
 
-    return articles
+
+async def fetch_contents(feed_entries: list[dict]) -> list[str | None]:
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT)
+
+    async with aiohttp.ClientSession() as session:
+        tasks = []
+        entries: list[FeedParserDict] = []
+        for entry in feed_entries:
+            entries.extend(entry.values())
+        for article_url in [entry.get("link") for entry in entries]:
+            task = asyncio.create_task(fetch_article_content(session, semaphore, article_url))
+            tasks.append(task)
+        return await asyncio.gather(*tasks)
 
 
 async def fetch_article_content(session: ClientSession, semaphore: Semaphore, url: str) -> str | None:
