@@ -1,14 +1,11 @@
-from ingestion import fetch_articles, load_articles_to_database
-
 from airflow.sdk import DAG, task
 from datetime import datetime
 
-@task
-def fetch_and_store_articles():
-    articles = fetch_articles()
 
-    if articles:
-        load_articles_to_database(articles)
+@task
+def scrape_articles_and_load_to_database() -> None:
+    from ingestion import scrape_articles_and_load_to_database
+    scrape_articles_and_load_to_database()
 
 
 with DAG(
@@ -18,4 +15,4 @@ with DAG(
     catchup=False
 ) as dag:
     
-    fetch_and_store_articles()
+    scrape_articles_and_load_to_database()
