@@ -68,15 +68,12 @@ def get_existing_urls(urls: list[str]) -> set[str]:
     return set(result)
 
 
-async def fetch_contents(feed_entries: list[dict]) -> list[str | None]:
+async def fetch_contents(feed_entries: list[FeedParserDict]) -> list[str | None]:
     semaphore = asyncio.Semaphore(MAX_CONCURRENT)
 
     async with aiohttp.ClientSession() as session:
         tasks = []
-        entries: list[FeedParserDict] = []
-        for entry in feed_entries:
-            entries.extend(entry.values())
-        for article_url in [entry.get("link") for entry in entries]:
+        for article_url in [entry.get("link", "") for entry in feed_entries]:
             task = asyncio.create_task(fetch_article_content(session, semaphore, article_url))
             tasks.append(task)
         return await asyncio.gather(*tasks)

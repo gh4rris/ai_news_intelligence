@@ -15,5 +15,5 @@ class RawDataModel(Base):
     author: Mapped[str] = mapped_column(String)
     summary: Mapped[str] = mapped_column(Text)
     published_at: Mapped[datetime] = mapped_column(DateTime)
-    ingested_at: Mapped[datetime] = mapped_column(DateTime)
-    content: Mapped[str] = mapped_column(Text)
+    ingested_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)

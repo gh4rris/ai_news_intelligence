@@ -11,4 +11,4 @@ class RawData(BaseModel):
     summary: str | None
     published_at: datetime | None
     ingested_at: datetime
-    content: str | None
+    content: str
