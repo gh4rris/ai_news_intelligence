@@ -1,5 +1,6 @@
 from database import Base
-from .raw_data import RawDataModel
+from .raw_article import RawArticleModel
+from .article_nlp import ArticleNLPModel
 
 
-__all__ = ["Base", "RawDataModel"]
+__all__ = ["Base", "RawArticleModel", "ArticleNLPModel"]

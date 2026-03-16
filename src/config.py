@@ -15,3 +15,6 @@ RSS_FEED = {
 }
 MAX_CONCURRENT = 10
 REQUEST_TIMEOUT = 10
+
+# nlp
+SENTIMENT_MODEL = "distilbert/distilbert-base-uncased-finetuned-sst-2-english"

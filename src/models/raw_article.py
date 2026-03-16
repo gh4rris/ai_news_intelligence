@@ -5,10 +5,10 @@ from sqlalchemy import Text, String, DateTime
 from datetime import datetime
 
 
-class RawDataModel(Base):
-    __tablename__ = "raw_data"
+class RawArticleModel(Base):
+    __tablename__ = "raw_articles"
 
-    article_id: Mapped[str] = mapped_column(primary_key=True)
+    article_id: Mapped[str] = mapped_column(String, primary_key=True)
     title: Mapped[str] = mapped_column(Text)
     url: Mapped[str] = mapped_column(String, unique=True)
     source_name: Mapped[str] = mapped_column(String)

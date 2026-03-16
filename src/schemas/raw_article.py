@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 
-class RawData(BaseModel):
+class RawArticle(BaseModel):
     article_id: str
     title: str | None
     url: str
