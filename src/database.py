@@ -9,4 +9,4 @@ class Base(DeclarativeBase):
 
 
 engine = sa.create_engine(DB_URL)
-Session = sessionmaker(bind=engine)
+SessionLocal = sessionmaker(bind=engine)

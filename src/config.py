@@ -18,3 +18,10 @@ REQUEST_TIMEOUT = 10
 
 # nlp
 SENTIMENT_MODEL = "distilbert/distilbert-base-uncased-finetuned-sst-2-english"
+ENTITY_EXTRACTOR_MODEL = "en_core_web_sm"
+TOPIC_KEYWORDS = {
+    "LLMs": ["gpt", "llm", "chatgpt", "openai"],
+    "Robotics": ["robot", "automation"],
+    "AI Policy": ["regulation", "government", "policy"],
+    "Startups": ["startup", "funding", "venture"]
+}

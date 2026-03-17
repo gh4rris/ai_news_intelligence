@@ -2,7 +2,7 @@ from config import RSS_FEED, MAX_CONCURRENT, REQUEST_TIMEOUT
 from utils import run_async
 from models import RawArticleModel
 from schemas.raw_article import RawArticle
-from database import Session
+from database import SessionLocal
 
 import hashlib
 import asyncio
@@ -18,7 +18,7 @@ from datetime import datetime
 
 
 @run_async
-async def scrape_articles_and_load_to_database():
+async def scrape_articles_and_load_to_database() -> None:
     feed_entries = fetch_feed_entries()
     contents = await fetch_contents(feed_entries)
     articles = validate_and_filter_data(feed_entries, contents)
@@ -42,7 +42,7 @@ def fetch_feed_entries() -> list[FeedParserDict]:
 
 
 def get_existing_urls(urls: list[str]) -> set[str]:
-    with Session() as session:
+    with SessionLocal() as session:
         statement = sa.select(RawArticleModel.url).where(RawArticleModel.url.in_(urls))
         result = session.execute(statement).scalars().all()
         
@@ -109,7 +109,7 @@ def parse_date(article: FeedParserDict) -> datetime | None:
 
 
 def load_articles_to_database(articles: list[RawArticle]) -> None:
-    with Session() as session:
+    with SessionLocal() as session:
         statement = insert(RawArticleModel).values([article.model_dump() for article in articles])
         statement = statement.on_conflict_do_nothing(index_elements=["url"])
         session.execute(statement)
