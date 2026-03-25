@@ -4,6 +4,7 @@ from models import RawArticleModel
 from schemas.raw_article import RawArticle
 from database import SessionLocal
 
+import logging
 import hashlib
 import asyncio
 from asyncio import Semaphore
@@ -17,12 +18,21 @@ from feedparser import FeedParserDict
 from datetime import datetime
 
 
+logger = logging.getLogger(__name__)
+
 @run_async
 async def scrape_articles_and_load_to_database() -> None:
     feed_entries = fetch_feed_entries()
+    logger.info(f"Fetched {len(feed_entries)} feeds")
+
     contents = await fetch_contents(feed_entries)
+    logger.info(f"Fetched {len(contents)} contents")
+
     articles = validate_and_filter_data(feed_entries, contents)
+    logger.info(f"Validated and filtered {len(articles)} raw articles")
+    
     load_articles_to_database(articles)
+    logger.info(f"{len(articles)} raw articles loaded to database")
 
 
 def fetch_feed_entries() -> list[FeedParserDict]:

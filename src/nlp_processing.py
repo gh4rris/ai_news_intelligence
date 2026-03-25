@@ -3,18 +3,21 @@ from models import RawArticleModel, NLPArticleModel
 from schemas.nlp_article import NLPArticle
 from database import SessionLocal
 
+import logging
 import sqlalchemy as sa
 import spacy
 from datetime import datetime
 from transformers import pipeline
 
 
+logger = logging.getLogger(__name__)
 sentiment_pipeline = pipeline("text-classification", model=SENTIMENT_MODEL)
 nlp = spacy.load(ENTITY_EXTRACTOR_MODEL)
 
 
 def process_articles_and_load_to_database() -> None:
     unprocessed_articles = get_unprocessed_articles()
+    logger.info(f"{len(unprocessed_articles)} unprocessed articles retrieved")
     articles = []
 
     for article_id, content in unprocessed_articles:
@@ -31,12 +34,10 @@ def process_articles_and_load_to_database() -> None:
             processed_at=datetime.now()
         )
         articles.append(article)
+    logger.info(f"{len(articles)} articles processed")
+
     load_processed_articles_to_database(articles)
-
-
-def get_sentiment(text: str) -> tuple[str, float]:
-    result = sentiment_pipeline(text)[0]
-    return result["label"], result["score"]
+    logger.info(f"{len(articles)} processed articles loaded to database")
 
 
 def get_unprocessed_articles() -> list[tuple[str, str]]:
@@ -51,16 +52,9 @@ def get_unprocessed_articles() -> list[tuple[str, str]]:
     return [tuple(row) for row in rows]
 
 
-def extract_entities(text: str) -> list[dict[str, str]]:
-    doc = nlp(text)
-    entities = [
-        {
-            "label": entity.label_,
-            "text": entity.text
-        }
-        for entity in doc.ents
-    ]
-    return entities
+def get_sentiment(text: str) -> tuple[str, float]:
+    result = sentiment_pipeline(text[:512])[0]
+    return result["label"], result["score"]
 
 
 def classify_topics(text: str) -> list[str]:
@@ -71,6 +65,18 @@ def classify_topics(text: str) -> list[str]:
             topics.append(topic)
 
     return topics or ["Other"]
+
+
+def extract_entities(text: str) -> list[dict[str, str]]:
+    doc = nlp(text)
+    entities = [
+        {
+            "label": entity.label_,
+            "text": entity.text
+        }
+        for entity in doc.ents
+    ]
+    return entities
 
 
 def load_processed_articles_to_database(articles: list[NLPArticle]) -> None:

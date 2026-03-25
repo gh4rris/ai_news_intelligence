@@ -8,6 +8,7 @@ dependencies = [
     "aiohttp>=3.13.3",
     "en-core-web-sm",
     "feedparser>=6.0.12",
+    "psycopg>=3.3.3",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.2",
     "spacy>=3.8.11",
@@ -19,6 +20,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "alembic>=1.18.4",
     "apache-airflow>=3.1.7",
     "pytest>=9.0.2",
     "ruff>=0.15.5",

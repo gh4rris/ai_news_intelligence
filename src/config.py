@@ -1,13 +1,23 @@
 import os
+import sys
 from dotenv import load_dotenv
 
 load_dotenv()
 
+
+# paths
+ROOT_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC_PATH = os.path.join(ROOT_PATH, "src")
+
+if SRC_PATH not in sys.path:
+    sys.path.insert(0, SRC_PATH)
+
 # database
 POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-POSTGRES_DB = os.getenv("POSTGRES_DB")
-DB_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432/{POSTGRES_DB}"
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
+APP_DB = os.getenv("APP_DB")
+DB_URL = f"postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:5432/{APP_DB}"
 
 # article scraper
 RSS_FEED = {

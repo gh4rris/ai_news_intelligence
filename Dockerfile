@@ -1,4 +1,4 @@
-FROM apache/airflow:3.1.7
+FROM apache/airflow:3.1.8
 
 COPY --from=ghcr.io/astral-sh/uv:0.8.15 /uv /uvx /bin/
 
