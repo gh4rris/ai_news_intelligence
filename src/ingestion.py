@@ -1,18 +1,17 @@
-from config import RSS_FEED, MAX_CONCURRENT, REQUEST_TIMEOUT
+from config import RSS_FEED, MAX_CONCURRENT, REQUEST_TIMEOUT, FEED_PATH, CONTENT_PATH, AWS_BUCKET
 from utils import run_async
-from models import RawArticleModel
-from schemas.raw_article import RawArticle
-from database import SessionLocal
 
 import logging
 import hashlib
 import asyncio
+import json
+import boto3
+from pathlib import Path
 from asyncio import Semaphore
 import aiohttp
 from aiohttp import ClientSession
 import trafilatura
-import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import insert
+import pandas as pd
 import feedparser as fp
 from feedparser import FeedParserDict
 from datetime import datetime
@@ -20,54 +19,86 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-@run_async
-async def scrape_articles_and_load_to_database() -> None:
-    feed_entries = fetch_feed_entries()
-    logger.info(f"Fetched {len(feed_entries)} feeds")
 
-    contents = await fetch_contents(feed_entries)
-    logger.info(f"Fetched {len(contents)} contents")
+def fetch_feed_entries() -> Path:
+    total_feed_entries = []
 
-    articles = validate_and_filter_data(feed_entries, contents)
-    logger.info(f"Validated and filtered {len(articles)} raw articles")
-    
-    load_articles_to_database(articles)
-    logger.info(f"{len(articles)} raw articles loaded to database")
-
-
-def fetch_feed_entries() -> list[FeedParserDict]:
-    feed_entries = []
-
+    ingestion_timestamp = datetime.now()
     for source_name, source_url in RSS_FEED.items():
         feed = fp.parse(source_url)
-        feed_urls = [entry.get("link", "") for entry in feed["entries"]]
-        existing_urls = get_existing_urls(feed_urls)
-        new_entries = [entry for entry in feed["entries"] if entry.get("link") not in existing_urls]
-
-        for entry in new_entries:
-            entry["source"] = source_name
-        feed_entries.extend(new_entries)
-
-    return feed_entries
-
-
-def get_existing_urls(urls: list[str]) -> set[str]:
-    with SessionLocal() as session:
-        statement = sa.select(RawArticleModel.url).where(RawArticleModel.url.in_(urls))
-        result = session.execute(statement).scalars().all()
+        feed_entries = [
+            {
+                "article_id": generate_article_id(entry.get("link", "")),
+                **entry,
+                "title_detail": json.dumps(entry.get("title_detail", {})),
+                "links": json.dumps(entry.get("links", [])),
+                "authors": json.dumps(entry.get("authors", [])),
+                "published_parsed": parse_date(entry),
+                "tags": json.dumps(entry.get("tags", [])),
+                "summary_detail": json.dumps(entry.get("summary_detail", {})),
+                "source": source_name,
+                "ingested_at": ingestion_timestamp
+            } for entry in feed["entries"]
+        ]
         
-    return set(result)
+        total_feed_entries.extend(feed_entries)
+    
+    return save_to_parquet(total_feed_entries, ingestion_timestamp, FEED_PATH)
 
 
-async def fetch_contents(feed_entries: list[FeedParserDict]) -> list[str | None]:
+def generate_article_id(url: str) -> str:
+    return hashlib.md5(url.encode()).hexdigest()
+
+
+def parse_date(article: FeedParserDict) -> datetime | None:
+    if article.get("published_parsed"):
+        return datetime(*article["published_parsed"][:6])
+    return None
+
+
+def save_to_parquet(data: list[dict], timestamp: datetime, path: Path) -> Path:
+    path.mkdir(parents=True, exist_ok=True)
+    df = pd.DataFrame(data)
+    date = timestamp.strftime("%Y-%m-%d")
+    file_path = path / f"{date}_{path.name}.parquet"
+    df.to_parquet(file_path)
+
+    logging.info(f"{file_path.name} saved to path: {file_path}")
+    return file_path
+
+
+def upload_to_aws(path: Path) -> str:
+    s3 = boto3.resource("s3")
+    key = f"{path.parent.name}/{path.name}"
+
+    with open(path, "rb") as data:
+        s3.Bucket(AWS_BUCKET).put_object(Key=key, Body=data)
+    
+    logging.info(f"{path.name} uploaded to bucket: s3://{AWS_BUCKET}/{key}")
+    return key
+
+
+@run_async
+async def fetch_contents(aws_key: str) -> Path:
+    article_url_df = pd.read_parquet(f"s3://{AWS_BUCKET}/{aws_key}")
     semaphore = asyncio.Semaphore(MAX_CONCURRENT)
+    ingestion_timestamp = datetime.now()
 
     async with aiohttp.ClientSession() as session:
         tasks = []
-        for article_url in [entry.get("link", "") for entry in feed_entries]:
+        for article_url in article_url_df["link"].values:
             task = asyncio.create_task(fetch_article_content(session, semaphore, article_url))
             tasks.append(task)
-        return await asyncio.gather(*tasks)
+        contents = await asyncio.gather(*tasks)
+
+    data = [
+        {
+            "article_id": id,
+            "content": content,
+            "ingested_at": ingestion_timestamp
+        } for id, content in zip(article_url_df["article_id"].values, contents)
+    ]
+    return save_to_parquet(data, ingestion_timestamp, CONTENT_PATH)
     
 
 async def fetch_article_content(session: ClientSession, semaphore: Semaphore, url: str) -> str | None:
@@ -83,44 +114,3 @@ async def fetch_article_content(session: ClientSession, semaphore: Semaphore, ur
         return trafilatura.extract(html)
 
 
-def validate_and_filter_data(feed_entries: list[FeedParserDict], contents: list[str | None]) -> list[RawArticle]:
-    articles: list[RawArticle] = []
-    
-    ingestion_timestamp = datetime.now()
-    for entry, content in zip(feed_entries, contents):
-        article_url = entry.get("link")
-        if article_url:
-            article = RawArticle(
-                article_id=generate_article_id(article_url),
-                title=entry.get("title"),
-                url=article_url,
-                source_name=entry.get("source"),
-                author=entry.get("author"),
-                summary=entry.get("description"),
-                published_at=parse_date(entry),
-                ingested_at=ingestion_timestamp,
-                content=content
-            )
-        articles.append(article)
-
-    articles = [article for article in articles if article.content and len(article.content) > 200]
-
-    return articles
-
-
-def generate_article_id(url: str) -> str:
-    return hashlib.md5(url.encode()).hexdigest()
-
-
-def parse_date(article: FeedParserDict) -> datetime | None:
-    if article.get("published_parsed"):
-        return datetime(*article["published_parsed"][:6])
-    return None
-
-
-def load_articles_to_database(articles: list[RawArticle]) -> None:
-    with SessionLocal() as session:
-        statement = insert(RawArticleModel).values([article.model_dump() for article in articles])
-        statement = statement.on_conflict_do_nothing(index_elements=["url"])
-        session.execute(statement)
-        session.commit()

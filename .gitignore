@@ -6,6 +6,7 @@ dist/
 wheels/
 *.egg-info
 logs/
+data/
 .vscode
 .ruff_cache
 .env
