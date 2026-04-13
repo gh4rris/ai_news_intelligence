@@ -8,7 +8,6 @@ dependencies = [
     "aiohttp>=3.13.3",
     "boto3>=1.42.86",
     "boto3-stubs[s3]>=1.42.87",
-    "databricks-sql-connector>=4.2.5",
     "dbt-core>=1.11.7",
     "dbt-databricks>=1.10.9",
     "en-core-web-sm",

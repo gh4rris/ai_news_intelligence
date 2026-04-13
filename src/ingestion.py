@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 def fetch_feed_entries() -> Path:
     total_feed_entries = []
-
     ingestion_timestamp = datetime.now()
+    
     for source_name, source_url in RSS_FEED.items():
         feed = fp.parse(source_url)
         feed_entries = [
@@ -43,6 +43,7 @@ def fetch_feed_entries() -> Path:
         
         total_feed_entries.extend(feed_entries)
     
+    logger.info(f"RSS feed scrapped at: {ingestion_timestamp.strftime("%d/%m/%Y %H:%M:%S")}")
     return save_to_parquet(total_feed_entries, ingestion_timestamp, FEED_PATH)
 
 
@@ -56,14 +57,18 @@ def parse_date(article: FeedParserDict) -> datetime | None:
     return None
 
 
-def save_to_parquet(data: list[dict], timestamp: datetime, path: Path) -> Path:
+def save_to_parquet(data: list[dict], ingested_at: datetime, path: Path) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     df = pd.DataFrame(data)
-    date = timestamp.strftime("%Y-%m-%d")
+
+    for col in df.select_dtypes(include="datetime64[ns]").columns:
+        df[col] = df[col].astype("datetime64[us]")
+
+    date = ingested_at.strftime("%Y-%m-%d")
     file_path = path / f"{date}_{path.name}.parquet"
     df.to_parquet(file_path)
 
-    logging.info(f"{file_path.name} saved to path: {file_path}")
+    logger.info(f"{file_path.name} saved to path: {file_path}")
     return file_path
 
 
@@ -74,7 +79,7 @@ def upload_to_aws(path: Path) -> str:
     with open(path, "rb") as data:
         s3.Bucket(AWS_BUCKET).put_object(Key=key, Body=data)
     
-    logging.info(f"{path.name} uploaded to bucket: s3://{AWS_BUCKET}/{key}")
+    logger.info(f"{path.name} uploaded to bucket: s3://{AWS_BUCKET}/{key}")
     return key
 
 
@@ -98,6 +103,8 @@ async def fetch_contents(aws_key: str) -> Path:
             "ingested_at": ingestion_timestamp
         } for id, content in zip(article_url_df["article_id"].values, contents)
     ]
+
+    logger.info(f"Contents scrapped at: {ingestion_timestamp.strftime("%d/%m/%Y %H:%M:%S")}")
     return save_to_parquet(data, ingestion_timestamp, CONTENT_PATH)
     
 

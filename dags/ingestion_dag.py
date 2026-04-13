@@ -12,20 +12,22 @@ from datetime import datetime
 def news_ingestion() -> None:
 
     @task.python
-    def fetch_feed_entries_and_save() -> Path:
+    def fetch_feed_entries_and_save() -> str:
         from ingestion import fetch_feed_entries
-        return fetch_feed_entries()
+        path = fetch_feed_entries()
+        return str(path)
 
 
     @task.python
-    def upload_to_aws() -> str:
+    def upload_to_aws(path: str) -> str:
         from ingestion import upload_to_aws
-        return upload_to_aws()
+        return upload_to_aws(Path(path))
     
     @task.python
-    def fetch_contents_and_save() -> Path:
+    def fetch_contents_and_save(key: str) -> str:
         from ingestion import fetch_contents
-        return fetch_contents()
+        path = fetch_contents(key)
+        return str(path)
 
     
     feed_path = fetch_feed_entries_and_save()
