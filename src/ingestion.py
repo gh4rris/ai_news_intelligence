@@ -14,7 +14,8 @@ import trafilatura
 import pandas as pd
 import feedparser as fp
 from feedparser import FeedParserDict
-from datetime import datetime
+import pendulum
+from pendulum import DateTime, datetime
 
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 def fetch_feed_entries() -> Path:
     total_feed_entries = []
-    ingestion_timestamp = datetime.now()
+    ingestion_timestamp = pendulum.now()
     
     for source_name, source_url in RSS_FEED.items():
         feed = fp.parse(source_url)
@@ -51,22 +52,18 @@ def generate_article_id(url: str) -> str:
     return hashlib.md5(url.encode()).hexdigest()
 
 
-def parse_date(article: FeedParserDict) -> datetime | None:
+def parse_date(article: FeedParserDict) -> DateTime | None:
     if article.get("published_parsed"):
         return datetime(*article["published_parsed"][:6])
     return None
 
 
-def save_to_parquet(data: list[dict], ingested_at: datetime, path: Path) -> Path:
+def save_to_parquet(data: list[dict], ingested_at: DateTime, path: Path) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     df = pd.DataFrame(data)
-
-    for col in df.select_dtypes(include="datetime64[ns]").columns:
-        df[col] = df[col].astype("datetime64[us]")
-
     date = ingested_at.strftime("%Y-%m-%d")
     file_path = path / f"{date}_{path.name}.parquet"
-    df.to_parquet(file_path)
+    df.to_parquet(file_path, engine="pyarrow", coerce_timestamps="us", index=False, compression="zstd")
 
     logger.info(f"{file_path.name} saved to path: {file_path}")
     return file_path
@@ -87,7 +84,7 @@ def upload_to_aws(path: Path) -> str:
 async def fetch_contents(aws_key: str) -> Path:
     article_url_df = pd.read_parquet(f"s3://{AWS_BUCKET}/{aws_key}")
     semaphore = asyncio.Semaphore(MAX_CONCURRENT)
-    ingestion_timestamp = datetime.now()
+    ingestion_timestamp = pendulum.now()
 
     async with aiohttp.ClientSession() as session:
         tasks = []

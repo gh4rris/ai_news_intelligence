@@ -1,11 +1,12 @@
 from airflow.sdk import dag, task
 from pathlib import Path
-from datetime import datetime
+from pendulum import datetime
+
 
 
 @dag(
         dag_id="news_ingestion",
-        start_date=datetime(2026, 4, 12),
+        start_date=datetime(year=2026, month=4, day=14, tz="Europe/London"),
         schedule="@daily",
         catchup=False
 )
@@ -23,17 +24,26 @@ def news_ingestion() -> None:
         from ingestion import upload_to_aws
         return upload_to_aws(Path(path))
     
+
     @task.python
     def fetch_contents_and_save(key: str) -> str:
         from ingestion import fetch_contents
         path = fetch_contents(key)
         return str(path)
+    
+
+    @task.bash
+    def run_dbt_bronze() -> str:
+        return "cd /opt/airflow/ai_news_dbt && dbt run --select feed content"
 
     
     feed_path = fetch_feed_entries_and_save()
     aws_key = upload_to_aws(feed_path)
     content_path = fetch_contents_and_save(aws_key)
-    upload_to_aws(content_path)
+    upload_parquet_to_s3 = upload_to_aws(content_path)
+    create_bronze_layer = run_dbt_bronze()
+
+    upload_parquet_to_s3 >> create_bronze_layer
 
 
 news_ingestion()
