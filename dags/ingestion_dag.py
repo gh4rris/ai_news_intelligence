@@ -35,15 +35,21 @@ def news_ingestion() -> None:
     @task.bash
     def run_dbt_bronze() -> str:
         return "cd /opt/airflow/ai_news_dbt && dbt run --select feed content"
+    
+
+    @task.bash
+    def dbt_test_bronze() -> str:
+        return "cd /opt/airflow/ai_news_dbt && dbt test --select feed content"
 
     
     feed_path = fetch_feed_entries_and_save()
     aws_key = upload_to_aws(feed_path)
     content_path = fetch_contents_and_save(aws_key)
-    upload_parquet_to_s3 = upload_to_aws(content_path)
+    upload_content_to_s3 = upload_to_aws(content_path)
     create_bronze_layer = run_dbt_bronze()
+    test_bronze_layer = dbt_test_bronze()
 
-    upload_parquet_to_s3 >> create_bronze_layer
+    upload_content_to_s3 >> create_bronze_layer >> test_bronze_layer
 
 
 news_ingestion()

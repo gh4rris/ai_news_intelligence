@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: feed
+    columns:
+      - name: article_id
+        data_tests:
+          - unique
+          - not_null
+
+  - name: content
+    columns:
+      - name: article_id
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('feed')
+                field: article_id
+          
