@@ -36,3 +36,6 @@ models:
       +materialized: streaming_table
       +auto_refresh: false
       +schema: bronze
+    silver:
+      +materialized: table
+      +schema: silver

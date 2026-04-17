@@ -6,7 +6,7 @@ from pendulum import datetime
 
 @dag(
         dag_id="news_ingestion",
-        start_date=datetime(year=2026, month=4, day=14, tz="Europe/London"),
+        start_date=datetime(year=2026, month=4, day=17, tz="Europe/London"),
         schedule="@daily",
         catchup=False
 )
@@ -33,23 +33,23 @@ def news_ingestion() -> None:
     
 
     @task.bash
-    def run_dbt_bronze() -> str:
-        return "cd /opt/airflow/ai_news_dbt && dbt run --select feed content"
+    def run_dbt_bronze_and_silver() -> str:
+        return "cd /opt/airflow/ai_news_dbt && dbt run"
     
 
     @task.bash
-    def dbt_test_bronze() -> str:
-        return "cd /opt/airflow/ai_news_dbt && dbt test --select feed content"
+    def dbt_test_bronze_and_silver() -> str:
+        return "cd /opt/airflow/ai_news_dbt && dbt test"
 
     
     feed_path = fetch_feed_entries_and_save()
     aws_key = upload_to_aws(feed_path)
     content_path = fetch_contents_and_save(aws_key)
     upload_content_to_s3 = upload_to_aws(content_path)
-    create_bronze_layer = run_dbt_bronze()
-    test_bronze_layer = dbt_test_bronze()
+    create_bronze_and_silver_layer = run_dbt_bronze_and_silver()
+    test_bronze_and_silver_layer = dbt_test_bronze_and_silver()
 
-    upload_content_to_s3 >> create_bronze_layer >> test_bronze_layer
+    upload_content_to_s3 >> create_bronze_and_silver_layer >> test_bronze_and_silver_layer
 
 
 news_ingestion()
