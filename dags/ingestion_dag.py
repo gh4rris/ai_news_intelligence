@@ -40,7 +40,6 @@ def news_ingestion() -> None:
     @task.bash
     def dbt_test_bronze_and_silver() -> str:
         return "cd /opt/airflow/ai_news_dbt && dbt test"
-
     
     feed_path = fetch_feed_entries_and_save()
     aws_key = upload_to_aws(feed_path)

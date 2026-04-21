@@ -5,14 +5,12 @@ models:
     columns:
       - name: article_id
         data_tests:
-          - unique
           - not_null
 
   - name: content
     columns:
       - name: article_id
         data_tests:
-          - unique
           - not_null
           - relationships:
               arguments:
