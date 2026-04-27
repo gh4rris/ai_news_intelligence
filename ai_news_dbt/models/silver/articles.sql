@@ -3,7 +3,7 @@ WITH feed as
     SELECT f1.article_id, f1.title, f1.link, f1.author, f1.published_parsed, f1.summary, f1.source, f1.ingested_at
     FROM {{ ref('feed') }} AS f1
     JOIN (
-        SELECT article_id, MAX(ingested_at) AS max_ingested
+        SELECT article_id, MIN(ingested_at) AS max_ingested
         FROM {{ ref('feed') }}
         GROUP BY article_id
     ) AS f2
@@ -14,7 +14,7 @@ content as
     SELECT c1.article_id, c1.content, c1.ingested_at
     FROM {{ ref('content') }} AS c1
     JOIN (
-        SELECT article_id, MAX(ingested_at) AS max_ingested
+        SELECT article_id, MIN(ingested_at) AS max_ingested
         FROM {{ ref('content') }}
         GROUP BY article_id
     ) AS c2

@@ -69,7 +69,7 @@ def save_to_parquet(data: list[dict], ingested_at: DateTime, path: Path) -> Path
     return file_path
 
 
-def upload_to_aws(path: Path) -> str:
+def upload_to_s3(path: Path) -> str:
     s3 = boto3.resource("s3")
     key = f"{path.parent.name}/{path.name}"
 

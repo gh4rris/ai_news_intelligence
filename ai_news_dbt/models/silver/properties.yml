@@ -26,4 +26,24 @@ models:
       - name: content_ingestion
         data_tests:
           - not_null
+
+sources:
+  - name: silver
+    schema: silver
+    tables:
+      - name: sentiment
+        columns:
+          - name: article_id
+            data_tests:
+              - unique
+              - not_null
+          - name: sentiment
+            data_tests:
+             - not_null
+          - name: score
+            data_tests:
+              - not_null
+          - name: processed_at
+            data_tests:
+              - not_null
           
