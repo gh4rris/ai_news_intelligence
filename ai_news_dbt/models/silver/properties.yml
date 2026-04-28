@@ -31,7 +31,7 @@ sources:
   - name: silver
     schema: silver
     tables:
-      - name: sentiment
+      - name: nlp_articles
         columns:
           - name: article_id
             data_tests:
@@ -40,7 +40,13 @@ sources:
           - name: sentiment
             data_tests:
              - not_null
-          - name: score
+          - name: sentiment_score
+            data_tests:
+              - not_null
+          - name: topics
+            data_tests:
+              - not_null
+          - name: entities
             data_tests:
               - not_null
           - name: processed_at

@@ -1,19 +1,15 @@
-# from config import AWS_BUCKET
-
 from airflow.sdk import dag, task
 from pathlib import Path
 from pendulum import datetime
 
 
-# content_asset = Asset(f"s3://{AWS_BUCKET}/content")
-
 @dag(
-    dag_id="news_ingestion",
-    start_date=datetime(year=2026, month=4, day=22, tz="Europe/London"),
-    schedule=None,
+    dag_id="ai_news",
+    start_date=datetime(year=2026, month=4, day=28, tz="Europe/London"),
+    schedule="@daily",
     catchup=False
 )
-def news_ingestion() -> None:
+def ai_news() -> None:
 
     @task.python
     def fetch_feed_entries_and_save() -> str:
@@ -56,17 +52,23 @@ def news_ingestion() -> None:
         from nlp_processing import article_enrichment_with_nlp
         article_enrichment_with_nlp()
 
+
+    @task.bash
+    def test_nlp_articles() -> str:
+        return "cd /opt/airflow/ai_news_dbt && dbt test --select source:silver.nlp_articles"
+
     
     feed_path = fetch_feed_entries_and_save()
     aws_key = upload_feed_to_s3(feed_path)
     content_path = fetch_contents_and_save(aws_key)
     upload_content = upload_content_to_s3(content_path)
     materialize = materialize_raw_and_cleansed_articles()
-    test = test_raw_and_cleansed_articles()
+    test_raw_and_cleansed = test_raw_and_cleansed_articles()
     enrichment = article_enrichment_with_nlp()
+    test_nlp = test_nlp_articles()
     
 
-    upload_content >> materialize >> test >> enrichment
+    upload_content >> materialize >> test_raw_and_cleansed >> enrichment >> test_nlp
 
 
-news_ingestion()
+ai_news()

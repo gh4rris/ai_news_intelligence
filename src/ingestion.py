@@ -5,7 +5,6 @@ import logging
 import hashlib
 import asyncio
 import json
-import boto3
 from pathlib import Path
 from asyncio import Semaphore
 import aiohttp
@@ -16,6 +15,7 @@ import feedparser as fp
 from feedparser import FeedParserDict
 import pendulum
 from pendulum import DateTime, datetime
+from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
 
 logger = logging.getLogger(__name__)
@@ -70,25 +70,29 @@ def save_to_parquet(data: list[dict], ingested_at: DateTime, path: Path) -> Path
 
 
 def upload_to_s3(path: Path) -> str:
-    s3 = boto3.resource("s3")
+    hook = S3Hook(aws_conn_id="aws")
     key = f"{path.parent.name}/{path.name}"
-
-    with open(path, "rb") as data:
-        s3.Bucket(AWS_BUCKET).put_object(Key=key, Body=data)
-    
-    logger.info(f"{path.name} uploaded to bucket: s3://{AWS_BUCKET}/{key}")
+    hook.load_file(
+        filename=path,
+        key=key,
+        bucket_name=AWS_BUCKET,
+        replace=True
+    )
     return key
 
 
 @run_async
 async def fetch_contents(aws_key: str) -> Path:
-    article_url_df = pd.read_parquet(f"s3://{AWS_BUCKET}/{aws_key}")
+    hook = S3Hook(aws_conn_id="aws")
+    feed_path = hook.download_file(key=aws_key, bucket_name=AWS_BUCKET)
+    feed_df = pd.read_parquet(feed_path)
+    
     semaphore = asyncio.Semaphore(MAX_CONCURRENT)
     ingestion_timestamp = pendulum.now()
 
     async with aiohttp.ClientSession() as session:
         tasks = []
-        for article_url in article_url_df["link"].values:
+        for article_url in feed_df["link"].values:
             task = asyncio.create_task(fetch_article_content(session, semaphore, article_url))
             tasks.append(task)
         contents = await asyncio.gather(*tasks)
@@ -98,7 +102,7 @@ async def fetch_contents(aws_key: str) -> Path:
             "article_id": id,
             "content": content,
             "ingested_at": ingestion_timestamp
-        } for id, content in zip(article_url_df["article_id"].values, contents)
+        } for id, content in zip(feed_df["article_id"].values, contents)
     ]
 
     logger.info(f"Contents scrapped at: {ingestion_timestamp.strftime("%d/%m/%Y %H:%M:%S")}")

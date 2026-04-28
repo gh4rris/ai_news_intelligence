@@ -1,7 +1,9 @@
-from config import SENTIMENT_MODEL
+from config import SENTIMENT_MODEL, ENTITY_EXTRACTOR_MODEL, DATABRICKS_CATALOG, TOPIC_KEYWORDS, KEYWORD_THRESHOLD
 
 import logging
 import pendulum
+import re
+import spacy
 from transformers import pipeline
 from databricks.sql.types import Row
 from airflow.providers.databricks.hooks.databricks_sql import DatabricksSqlHook
@@ -9,95 +11,59 @@ from airflow.providers.databricks.hooks.databricks_sql import DatabricksSqlHook
 
 logger = logging.getLogger(__name__)
 sentiment_pipeline = pipeline("text-classification", model=SENTIMENT_MODEL)
-# nlp = spacy.load(ENTITY_EXTRACTOR_MODEL)
+nlp = spacy.load(ENTITY_EXTRACTOR_MODEL)
 
 
 def article_enrichment_with_nlp() -> None:
     hook = DatabricksSqlHook(databricks_conn_id="databricks")
     articles = fetch_todays_scraped_content(hook)
     logger.info(f"Articles fetched: {len(articles)}")
-    enriched_articles = []
+
+    nlp_results = []
     for article in articles:
         sentiment, score = get_sentiment(article.content)
+        topics = classify_topics(article.content)
+        entities = extract_entities(article.content)
         processed_timestamp = pendulum.now()
-        enriched_articles.append(
-            (
-                article.article_id,
-                sentiment,
-                score,
-                processed_timestamp
-            )
+        nlp_results.append(
+            f"""('{article.article_id}',
+            '{sentiment}',
+            {score},
+            array({", ".join(f"'{topic}'" for topic in topics)}),
+            array({f", ".join(f"map({", ".join(f"'{k}', '{v}'" for k, v in entity.items())})" for entity in entities)}),
+            '{processed_timestamp}')"""
         )
-    create_if_not_exists_sentiment(hook)
-    insert_into_sentiment(hook, enriched_articles)
-    logger.info("Data inserted")
+    create_table_if_not_exists(hook)
+    insert_into_nlp_articles(hook, nlp_results)
+    logger.info(f"Records inserted: {len(nlp_results)}")
 
 
 def fetch_todays_scraped_content(hook: DatabricksSqlHook) -> list[Row]:
-    return hook.get_records("""
+    return hook.get_records(f"""
     SELECT article_id, content
-    FROM ai_news.silver.articles
+    FROM {DATABRICKS_CATALOG}.silver.articles
     WHERE CAST(content_ingestion AS DATE) = CURRENT_DATE
     """)
 
 
-def create_if_not_exists_sentiment(hook: DatabricksSqlHook) -> None:
-    hook.run("""
-    CREATE TABLE IF NOT EXISTS ai_news.silver.sentiment (
+def create_table_if_not_exists(hook: DatabricksSqlHook) -> None:
+    hook.run(f"""
+    CREATE TABLE IF NOT EXISTS {DATABRICKS_CATALOG}.silver.nlp_articles (
     article_id STRING,
     sentiment STRING,
-    score DOUBLE,
+    sentiment_score DOUBLE,
+    topics ARRAY<STRING>,
+    entities ARRAY<MAP<STRING, STRING>>,
     processed_at TIMESTAMP
     )
     """)
 
 
-def insert_into_sentiment(hook: DatabricksSqlHook, sentiments: list[tuple]) -> None:
-    values = ", ".join(
-        f"('{article_id}', '{sentiment}', {score}, '{processed_timestamp}')"
-        for article_id, sentiment, score, processed_timestamp in sentiments
-        )
+def insert_into_nlp_articles(hook: DatabricksSqlHook, values: list[str]) -> None:
     hook.run(f"""
-    INSERT INTO ai_news.silver.sentiment (article_id, sentiment, score, processed_at)
-    VALUES {values}
+    INSERT INTO {DATABRICKS_CATALOG}.silver.nlp_articles (article_id, sentiment, sentiment_score, topics, entities, processed_at)
+    VALUES {", ".join(values)}
     """)
-
-
-# def process_articles_and_load_to_database() -> None:
-#     unprocessed_articles = get_unprocessed_articles()
-#     logger.info(f"{len(unprocessed_articles)} unprocessed articles retrieved")
-#     articles = []
-
-#     for article_id, content in unprocessed_articles:
-#         sentiment, score = get_sentiment(content)
-#         topics = classify_topics(content)
-#         entities = extract_entities(content)
-
-#         article = NLPArticle(
-#             article_id=article_id,
-#             sentiment=sentiment,
-#             sentiment_score=score,
-#             topics=topics,
-#             entities=entities,
-#             processed_at=datetime.now()
-#         )
-#         articles.append(article)
-#     logger.info(f"{len(articles)} articles processed")
-
-#     load_processed_articles_to_database(articles)
-#     logger.info(f"{len(articles)} processed articles loaded to database")
-
-
-# def get_unprocessed_articles() -> list[tuple[str, str]]:
-#     statement = sa.select(
-#         RawArticleModel.article_id,
-#         RawArticleModel.content
-#         ).outerjoin(NLPArticleModel).where(NLPArticleModel.article_id.is_(None))
-    
-#     with SessionLocal() as session:
-#         rows = session.execute(statement).fetchall()
-
-#     return [tuple(row) for row in rows]
 
 
 def get_sentiment(text: str) -> tuple[str, float]:
@@ -105,30 +71,32 @@ def get_sentiment(text: str) -> tuple[str, float]:
     return result["label"], round(result["score"], 2)
 
 
-# def classify_topics(text: str) -> list[str]:
-#     topics = []
+def classify_topics(text: str) -> list[str]:
+    article_lower = text.lower()
+    scores = {
+        topic: sum(
+            len(re.findall(rf"\b{keyword}\b", article_lower))
+            for keyword in keywords
+        )
+        for topic, keywords in TOPIC_KEYWORDS.items()
+    }
 
-#     for topic, keywords in TOPIC_KEYWORDS.items():
-#         if any(keyword in text.lower() for keyword in keywords):
-#             topics.append(topic)
+    topics = [
+        topic
+        for topic, score in scores.items()
+        if score >= KEYWORD_THRESHOLD
+    ]
 
-#     return topics or ["Other"]
-
-
-# def extract_entities(text: str) -> list[dict[str, str]]:
-#     doc = nlp(text)
-#     entities = [
-#         {
-#             "label": entity.label_,
-#             "text": entity.text
-#         }
-#         for entity in doc.ents
-#     ]
-#     return entities
+    return topics or ["Other"]
 
 
-# def load_processed_articles_to_database(articles: list[NLPArticle]) -> None:
-#     with SessionLocal() as session:
-#         statement = sa.insert(NLPArticleModel).values([article.model_dump() for article in articles])
-#         session.execute(statement)
-#         session.commit()
+def extract_entities(text: str) -> list[dict[str, str]]:
+    doc = nlp(text)
+    entities = [
+        {
+            "label": entity.label_,
+            "text": entity.text
+        }
+        for entity in doc.ents
+    ]
+    return entities
