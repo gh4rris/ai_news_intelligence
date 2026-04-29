@@ -1,0 +1,27 @@
+version: 2
+
+models:
+
+  - name: int_articles_topics
+    columns:
+      - name: article_id
+        data_tests:
+          - not_null
+      - name: topic
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["Machine Learning", "Generative AI", "Robotics", "AI Ethics & Safety", "AI Research", "AI in Business", "Natural Language Processing", "Computer Vision", "Other"]
+
+  - name: int_articles_entities
+    columns:
+      - name: article_id
+        data_tests:
+          - not_null
+      - name: entity_label
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["ORG", "PERSON", "PRODUCT"]

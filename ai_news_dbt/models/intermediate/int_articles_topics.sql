@@ -1,4 +1,5 @@
-SELECT 
+SELECT
+    a.article_id,
     a.title,
     a.link,
     a.author,

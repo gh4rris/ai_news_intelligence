@@ -39,3 +39,6 @@ models:
     silver:
       +materialized: table
       +schema: silver
+    intermediate:
+      +materialized: table
+      +schema: intermediate
