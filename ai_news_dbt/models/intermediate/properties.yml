@@ -7,16 +7,44 @@ models:
       - name: article_id
         data_tests:
           - not_null
+      - name: title
+        data_tests:
+          - not_null
+      - name: link
+        data_tests:
+          - not_null
+      - name: source
+        data_tests:
+          - not_null
       - name: topic
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: ["Machine Learning", "Generative AI", "Robotics", "AI Ethics & Safety", "AI Research", "AI in Business", "Natural Language Processing", "Computer Vision", "Other"]
+      - name: sentiment
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["POSITIVE", "NEGATIVE"]
+      - name: sentiment_score
+        data_tests:
+          - not_null
+          - between_0_and_100
 
   - name: int_articles_entities
     columns:
       - name: article_id
+        data_tests:
+          - not_null
+      - name: title
+        data_tests:
+          - not_null
+      - name: link
+        data_tests:
+          - not_null
+      - name: source
         data_tests:
           - not_null
       - name: entity_label
@@ -25,3 +53,13 @@ models:
           - accepted_values:
               arguments:
                 values: ["ORG", "PERSON", "PRODUCT"]
+      - name: sentiment
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["POSITIVE", "NEGATIVE"]
+      - name: sentiment_score
+        data_tests:
+          - not_null
+          - between_0_and_100

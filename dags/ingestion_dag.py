@@ -42,33 +42,33 @@ def ai_news() -> None:
         return "cd /opt/airflow/ai_news_dbt && dbt run --select feed content articles"
     
 
-    @task.bash
-    def test_raw_and_cleansed_articles() -> str:
-        return "cd /opt/airflow/ai_news_dbt && dbt test --select feed content articles"
-    
-
     @task.python
-    def article_enrichment_with_nlp():
+    def article_enrichment_with_nlp() -> None:
         from nlp_processing import article_enrichment_with_nlp
         article_enrichment_with_nlp()
-
+    
 
     @task.bash
-    def test_nlp_articles() -> str:
-        return "cd /opt/airflow/ai_news_dbt && dbt test --select source:silver.nlp_articles"
+    def transform_intermediate_and_gold() -> str:
+        return "cd /opt/airflow/ai_news_dbt && dbt run --select intermediate gold"
+    
+
+    @task.bash
+    def test_all_tables() -> str:
+        return "cd /opt/airflow/ai_news_dbt && dbt test"
 
     
     feed_path = fetch_feed_entries_and_save()
     aws_key = upload_feed_to_s3(feed_path)
     content_path = fetch_contents_and_save(aws_key)
     upload_content = upload_content_to_s3(content_path)
-    materialize = materialize_raw_and_cleansed_articles()
-    test_raw_and_cleansed = test_raw_and_cleansed_articles()
+    raw_and_cleansed = materialize_raw_and_cleansed_articles()
     enrichment = article_enrichment_with_nlp()
-    test_nlp = test_nlp_articles()
+    intermediate_and_gold = transform_intermediate_and_gold()
+    test_tables = test_all_tables()
     
 
-    upload_content >> materialize >> test_raw_and_cleansed >> enrichment >> test_nlp
+    upload_content >> raw_and_cleansed >> enrichment >> intermediate_and_gold >> test_tables
 
 
 ai_news()

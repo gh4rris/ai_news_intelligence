@@ -1,0 +1,99 @@
+version: 2
+
+models:
+
+  - name: daily_summary
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "pct_positive + pct_negative = 100"
+    columns:
+      - name: published_date
+        data_tests:
+          - not_null
+          - unique
+      - name: total_articles
+        data_tests:
+          - not_null
+          - non_negative
+      - name: pct_positive
+        data_tests:
+          - not_null
+          - between_0_and_100
+      - name: pct_negative
+        data_tests:
+          - not_null
+          - between_0_and_100
+      - name: most_active_source
+        data_tests:
+          - not_null
+      - name: top_topic
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["Machine Learning", "Generative AI", "Robotics", "AI Ethics & Safety", "AI Research", "AI in Business", "Natural Language Processing", "Computer Vision", "Other"]
+      - name: top_entity_label
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["ORG", "PERSON", "PRODUCT"]
+      - name: top_entity_text
+        data_tests:
+          - not_null
+
+  - name: topic_trends
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "(published_date || topic)"
+    columns:
+      - name: published_date
+        data_tests:
+          - not_null
+      - name: topic
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["Machine Learning", "Generative AI", "Robotics", "AI Ethics & Safety", "AI Research", "AI in Business", "Natural Language Processing", "Computer Vision", "Other"]
+      - name: article_count
+        data_tests:
+          - not_null
+          - non_negative
+      - name: dominant_sentiment
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["POSITIVE", "NEGATIVE"]
+
+  - name:  entity_trends
+    data_tests:
+      - unique:
+          arguments:
+            column_name:  "(published_date || entity_label || entity_text)"
+    columns:
+      - name: published_date
+        data_tests:
+          - not_null
+      - name: entity_label
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["ORG", "PERSON", "PRODUCT"]
+      - name: entity_text
+        data_tests:
+          - not_null
+      - name: article_count
+        data_tests:
+          - not_null
+          - non_negative
+      - name: dominant_sentiment
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["POSITIVE", "NEGATIVE"]
