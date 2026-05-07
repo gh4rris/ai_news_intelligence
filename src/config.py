@@ -29,12 +29,13 @@ SENTIMENT_MODEL = "distilbert/distilbert-base-uncased-finetuned-sst-2-english"
 ENTITY_EXTRACTOR_MODEL = "en_core_web_sm"
 TOPIC_KEYWORDS = {
     "Machine Learning": ["machine learning", "ml", "neural network", "deep learning", "training data", "model training", "supervised", "unsupervised", "classification", "regression"],
-    "Generative AI": ["generative", "gpt", "llm", "chatgpt", "openai", "claude", "anthropic", "gemini"],
+    "Generative AI": ["generative", "gpt", "llm", "llms", "chatgpt", "openai", "claude", "anthropic", "gemini"],
     "Robotics": ["robot", "robotics", "automation", "drone", "sensor", "physical ai", "embodied ai"],
     "AI Ethics & Safety": ["regulation", "government", "policy", "ethics", "safety", "transparency", "governance", "privacy", "legislature", "legislative"],
     "AI Research": ["research", "paper", "study", "experiment", "benchmark", "peer review"],
     "AI in Business": ["business", "enterprise", "startup", "funding", "venture", "revenue", "productivity", "automation", "ceo", "deal", "equity"],
+    "AI Politics & Economy": ["economy", "economic", "economics", "gdp", "inflation", "tax", "investors", "democrats", "republicans"],
     "Natural Language Processing": ["nlp", "natural language", "text processing", "sentiment", "tokenization", "embedding", "speech recognition"],
-    "Computer Vision": ["computer vision", "image recognition", "object detection", "facial recognition", "image processing", "segmentation", "recognition"]
+    "Computer Vision": ["computer vision", "image recognition", "object detection", "facial recognition", "image processing", "segmentation"]
 }
 KEYWORD_THRESHOLD = 3

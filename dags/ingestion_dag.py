@@ -6,7 +6,7 @@ from pendulum import datetime
 @dag(
     dag_id="ai_news",
     start_date=datetime(year=2026, month=4, day=28, tz="Europe/London"),
-    schedule="@daily",
+    schedule=None,
     catchup=False
 )
 def ai_news() -> None:
