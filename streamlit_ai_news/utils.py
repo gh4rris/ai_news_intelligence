@@ -1,4 +1,4 @@
-from ai_news_streamlit.config import DATABRICKS_HOST, DATABRICKS_HTTP_PATH, DATABRICKS_ACCESS_TOKEN
+from config import DATABRICKS_HOST, DATABRICKS_HTTP_PATH, DATABRICKS_ACCESS_TOKEN
 
 import streamlit as st
 from databricks import sql

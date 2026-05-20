@@ -1,4 +1,5 @@
-from ai_news_streamlit.config import MAIN_PAGE
+from config import MAIN_PAGE
+
 import streamlit as st
 
 

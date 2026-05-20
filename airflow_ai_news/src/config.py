@@ -11,6 +11,14 @@ DATA_PATH = ROOT_PATH / "data"
 FEED_PATH = DATA_PATH / "feed"
 CONTENT_PATH = DATA_PATH / "content"
 
+# dbt
+DBT_PATH = os.getenv("DBT_PATH")
+DBT_IMAGE = "dbt_ai_news:latest"
+DBT_WORK_DIR = "/dbt_ai_news"
+
+# docker
+DOCKER_URL = "unix://var/run/docker.sock"
+
 # article scraper
 RSS_FEED = {
     "TechCrunch": "https://techcrunch.com/category/artificial-intelligence/feed"
@@ -27,6 +35,7 @@ DATABRICKS_CATALOG = os.getenv("DATABRICKS_CATALOG")
 # nlp
 SENTIMENT_MODEL = "distilbert/distilbert-base-uncased-finetuned-sst-2-english"
 ENTITY_EXTRACTOR_MODEL = "en_core_web_sm"
+HF_TOKEN = os.getenv("HF_TOKEN")
 TOPIC_KEYWORDS = {
     "Machine Learning": ["machine learning", "ml", "neural network", "deep learning", "training data", "model training", "supervised", "unsupervised", "classification", "regression"],
     "Generative AI": ["generative", "gpt", "llm", "llms", "chatgpt", "openai", "claude", "anthropic", "gemini"],

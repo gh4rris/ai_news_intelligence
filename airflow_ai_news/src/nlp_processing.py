@@ -1,4 +1,4 @@
-from config import SENTIMENT_MODEL, ENTITY_EXTRACTOR_MODEL, DATABRICKS_CATALOG, TOPIC_KEYWORDS, KEYWORD_THRESHOLD
+from config import SENTIMENT_MODEL, ENTITY_EXTRACTOR_MODEL, DATABRICKS_CATALOG, TOPIC_KEYWORDS, KEYWORD_THRESHOLD, HF_TOKEN
 
 import logging
 import pendulum
@@ -6,11 +6,12 @@ import re
 import spacy
 from transformers import pipeline
 from databricks.sql.types import Row
+from databricks import sql
 from airflow.providers.databricks.hooks.databricks_sql import DatabricksSqlHook
 
 
 logger = logging.getLogger(__name__)
-sentiment_pipeline = pipeline("text-classification", model=SENTIMENT_MODEL)
+sentiment_pipeline = pipeline("text-classification", model=SENTIMENT_MODEL, token=HF_TOKEN)
 nlp = spacy.load(ENTITY_EXTRACTOR_MODEL)
 
 
@@ -26,12 +27,14 @@ def article_enrichment_with_nlp() -> None:
         entities = extract_entities(article.content)
         processed_timestamp = pendulum.now()
         nlp_results.append(
-            f"""('{article.article_id}',
-            '{sentiment}',
-            {score},
-            array({", ".join(f"'{topic}'" for topic in topics)}),
-            array({f", ".join(f"map({", ".join(f"'{k}', '{v}'" for k, v in entity.items())})" for entity in entities)}),
-            '{processed_timestamp}')"""
+            (
+                article.article_id,
+                sentiment,
+                score,
+                topics,
+                entities,
+                processed_timestamp
+            )
         )
     create_table_if_not_exists(hook)
     insert_into_nlp_articles(hook, nlp_results)
@@ -60,10 +63,16 @@ def create_table_if_not_exists(hook: DatabricksSqlHook) -> None:
 
 
 def insert_into_nlp_articles(hook: DatabricksSqlHook, values: list[str]) -> None:
-    hook.run(f"""
-    INSERT INTO {DATABRICKS_CATALOG}.silver.nlp_articles (article_id, sentiment, sentiment_score, topics, entities, processed_at)
-    VALUES {", ".join(values)}
-    """)
+    with sql.connect(
+        server_hostname=hook.host,
+        http_path=hook._http_path,
+        access_token=hook._token
+    ) as conn:
+        with conn.cursor() as cur:
+            cur.executemany(f"""
+            INSERT INTO {DATABRICKS_CATALOG}.silver.nlp_articles (article_id, sentiment, sentiment_score, topics, entities, processed_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """, values)
 
 
 def get_sentiment(text: str) -> tuple[str, float]:

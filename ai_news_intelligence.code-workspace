@@ -1,0 +1,19 @@
+{
+    "folders": [
+        {
+            "path": "."
+        },
+        {
+            "path": "airflow_ai_news"
+        },
+        {
+            "path": "streamlit_ai_news"
+        }
+    ],
+    "settings": {
+        "files.exclude": {
+            "airflow_ai_news": true,
+            "streamlit_ai_news": true
+        }
+    }
+}

@@ -1,5 +1,5 @@
-from ai_news_streamlit.config import DATABRICKS_CATALOG
-from ai_news_streamlit.utils import db_query
+from config import DATABRICKS_CATALOG
+from utils import db_query
 
 import streamlit as st
 from datetime import datetime
