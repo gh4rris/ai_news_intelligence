@@ -3,6 +3,7 @@ from config import SENTIMENT_MODEL, ENTITY_EXTRACTOR_MODEL, DATABRICKS_CATALOG, 
 import logging
 import pendulum
 import re
+import json
 import spacy
 from transformers import pipeline
 from databricks.sql.types import Row
@@ -31,8 +32,8 @@ def article_enrichment_with_nlp() -> None:
                 article.article_id,
                 sentiment,
                 score,
-                topics,
-                entities,
+                json.dumps(topics),
+                json.dumps(entities),
                 processed_timestamp
             )
         )
@@ -62,7 +63,7 @@ def create_table_if_not_exists(hook: DatabricksSqlHook) -> None:
     """)
 
 
-def insert_into_nlp_articles(hook: DatabricksSqlHook, values: list[str]) -> None:
+def insert_into_nlp_articles(hook: DatabricksSqlHook, values: list[tuple]) -> None:
     with sql.connect(
         server_hostname=hook.host,
         http_path=hook._http_path,
@@ -71,7 +72,7 @@ def insert_into_nlp_articles(hook: DatabricksSqlHook, values: list[str]) -> None
         with conn.cursor() as cur:
             cur.executemany(f"""
             INSERT INTO {DATABRICKS_CATALOG}.silver.nlp_articles (article_id, sentiment, sentiment_score, topics, entities, processed_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, from_json(?, 'array<string>'), from_json(?, 'array<map<string,string>>'), ?)
             """, values)
 
 
