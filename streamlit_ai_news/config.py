@@ -10,7 +10,9 @@ ROOT_PATH = Path(__file__).parent
 PAGES_PATH = ROOT_PATH / "pages"
 
 # pages
-MAIN_PAGE = PAGES_PATH / "main_page.py"
+DAILY_SUMMARY = PAGES_PATH / "daily_summary.py"
+TOPIC_TRENDS = PAGES_PATH / "topic_trends.py"
+ENTITY_TRENDS = PAGES_PATH / "entity_trends.py"
 
 # databricks
 DATABRICKS_HOST = os.getenv("DATABRICKS_HOST")

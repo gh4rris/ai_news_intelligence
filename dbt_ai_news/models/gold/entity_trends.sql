@@ -24,7 +24,7 @@ SELECT
     CAST(e.published AS DATE) AS published_date,
     e.entity_label,
     e.entity_text,
-    COUNT(*) AS article_count,
+    COUNT(*) AS mention_count,
     MAX(sr.sentiment) AS dominant_sentiment
 FROM {{ ref('int_articles_entities') }} AS e
 LEFT JOIN sentiment_rank AS sr

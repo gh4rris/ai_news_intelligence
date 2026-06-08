@@ -87,7 +87,7 @@ models:
       - name: entity_text
         data_tests:
           - not_null
-      - name: article_count
+      - name: mention_count
         data_tests:
           - not_null
           - non_negative

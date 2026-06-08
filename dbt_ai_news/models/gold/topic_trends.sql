@@ -16,15 +16,39 @@ sentiment_rank AS
         sentiment,
         ROW_NUMBER() OVER (PARTITION BY published_date, topic ORDER BY sentiment_count DESC, topic ASC) AS sentiment_row
     FROM sentiment_counts
+),
+topic_counts AS
+(
+	SELECT
+		CAST(t.published AS DATE) AS published_date,
+		t.topic,
+		COUNT(*) AS article_count,
+		MAX(sr.sentiment) AS dominant_sentiment
+	FROM {{ ref('int_articles_topics') }} AS t
+	LEFT JOIN sentiment_rank AS sr
+	ON CAST(t.published AS DATE) = sr.published_date AND t.topic = sr.topic AND sr.sentiment_row = 1
+	GROUP BY CAST(t.published AS DATE), t.topic
+),
+week_avg AS
+(
+	SELECT
+		tc.published_date,
+		tc.topic,
+		tc.article_count,
+		SUM(tc.article_count) OVER (PARTITION BY tc.topic ORDER BY tc.published_date ROWS BETWEEN 7 PRECEDING AND 1 PRECEDING) / 7 AS avg_7d_article_count,
+		tc.dominant_sentiment
+	FROM topic_counts AS tc
 )
 
 SELECT
-    CAST(t.published AS DATE) AS published_date,
-    t.topic,
-    COUNT(*) AS article_count,
-    MAX(sr.sentiment) AS dominant_sentiment
-FROM {{ ref('int_articles_topics') }} AS t
-LEFT JOIN sentiment_rank AS sr
-    ON CAST(t.published AS DATE) = sr.published_date AND t.topic = sr.topic AND sr.sentiment_row = 1
-GROUP BY CAST(t.published AS DATE), t.topic
-ORDER BY published_date, t.topic
+	wa.published_date,
+	wa.topic,
+	wa.article_count,
+	CASE WHEN CAST(wa.published_date AS DATE) < DATEADD(DAY, 1, MIN(wa.published_date) OVER ()) THEN NULL
+	ELSE ROUND(wa.avg_7d_article_count, 2) END AS avg_7d_article_count,
+	CASE WHEN CAST(wa.published_date AS DATE) < DATEADD(DAY, 1, MIN(wa.published_date) OVER ()) THEN NULL
+	ELSE ROUND((wa.article_count - wa.avg_7d_article_count) / NULLIF(wa.avg_7d_article_count, 0), 2) END AS momentum,
+	wa.dominant_sentiment
+FROM  week_avg AS wa
+ORDER BY wa.published_date, wa.topic
+
