@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from asyncio import Semaphore
 import aiohttp
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientTimeout
 import trafilatura
 import pandas as pd
 import feedparser as fp
@@ -26,16 +26,22 @@ def fetch_feed_entries() -> Path:
     ingestion_timestamp = pendulum.now()
     
     for source_name, source_url in RSS_FEED.items():
+        logger.info(f"Scrapping {source_name}...")
         feed = fp.parse(source_url)
         feed_entries = [
             {
                 "article_id": generate_article_id(entry.get("link", "")),
-                **entry,
+                "title": entry.get("title", ""),
                 "title_detail": json.dumps(entry.get("title_detail", {})),
                 "links": json.dumps(entry.get("links", [])),
+                "link": entry.get("link", ""),
                 "authors": json.dumps(entry.get("authors", [])),
+                "author": entry.get("author", ""),
+                "published": entry.get("published"),
                 "published_parsed": parse_date(entry),
                 "tags": json.dumps(entry.get("tags", [])),
+                "id": entry.get("id", ""),
+                "summary": entry.get("summary", ""),
                 "summary_detail": json.dumps(entry.get("summary_detail", {})),
                 "source": source_name,
                 "ingested_at": ingestion_timestamp
@@ -43,6 +49,7 @@ def fetch_feed_entries() -> Path:
         ]
         
         total_feed_entries.extend(feed_entries)
+        logger.info(f"{source_name} feed scrapped")
     
     logger.info(f"RSS feed scrapped at: {ingestion_timestamp.strftime("%d/%m/%Y %H:%M:%S")}")
     return save_to_parquet(total_feed_entries, ingestion_timestamp, FEED_PATH)
@@ -112,7 +119,8 @@ async def fetch_contents(aws_key: str) -> Path:
 async def fetch_article_content(session: ClientSession, semaphore: Semaphore, url: str) -> str | None:
     async with semaphore:
         try:
-            async with session.get(url, timeout=REQUEST_TIMEOUT) as resp:
+            async with session.get(url, headers={"User-Agent": "Mozilla/5.0"},
+                                   timeout=ClientTimeout(REQUEST_TIMEOUT)) as resp:
                 if resp.status != 200:
                     return None
                 html = await resp.text()
@@ -120,5 +128,4 @@ async def fetch_article_content(session: ClientSession, semaphore: Semaphore, ur
             return None
         
         return trafilatura.extract(html)
-
 
