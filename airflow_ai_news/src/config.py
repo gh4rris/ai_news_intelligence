@@ -21,10 +21,10 @@ DOCKER_URL = "unix://var/run/docker.sock"
 
 # article scraper
 RSS_FEED = {
-    # "TechCrunch": "https://techcrunch.com/category/artificial-intelligence/feed",
+    "TechCrunch": "https://techcrunch.com/category/artificial-intelligence/feed",
     "The Verge": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
-    # "Wired": "https://www.wired.com/feed/tag/ai/latest/rss",
-    # "VentureBeat": "https://venturebeat.com/category/ai/feed/"
+    "Wired": "https://www.wired.com/feed/tag/ai/latest/rss",
+    "VentureBeat":"https://venturebeat.com/category/ai/feed/"
 }
 MAX_CONCURRENT = 10
 REQUEST_TIMEOUT = 10
