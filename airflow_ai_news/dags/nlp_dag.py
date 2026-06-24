@@ -1,6 +1,7 @@
-from config import DBT_PATH, DBT_IMAGE, DBT_WORK_DIR, DOCKER_URL
+from config import AWS_BUCKET, DBT_PATH, DBT_IMAGE, DBT_WORK_DIR, DOCKER_URL
 
 from airflow.sdk import dag, task
+from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
 from pendulum import datetime
 from docker.types import Mount
 
@@ -12,6 +13,17 @@ from docker.types import Mount
     catchup=False
 )
 def nlp_dag() -> None:
+
+    check_for_parquet = S3KeySensor(
+        task_id="check_for_new_parquet",
+        bucket_name=AWS_BUCKET,
+        bucket_key="content/{{ ds }}_content.parquet",
+        aws_conn_id="aws",
+        mode="reschedule",
+        poke_interval=10,
+        timeout=120,
+        soft_fail=False
+    )
 
     @task.docker(
         image=DBT_IMAGE,
@@ -100,7 +112,7 @@ def nlp_dag() -> None:
     test_tables = test_all_tables()
     
 
-    raw_and_cleansed >> enrichment >> intermediate_and_gold >> test_tables
+    check_for_parquet >> raw_and_cleansed >> enrichment >> intermediate_and_gold >> test_tables
 
 
 nlp_dag()

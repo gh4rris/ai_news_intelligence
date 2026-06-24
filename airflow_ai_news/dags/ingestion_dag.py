@@ -38,9 +38,9 @@ def ingestion_dag() -> None:
     
     
     feed_path = fetch_feed_entries_and_save()
-    aws_key = upload_feed_to_s3(feed_path)
-    content_path = fetch_contents_and_save(aws_key)
-    upload_content_to_s3(content_path)
+    aws_key = upload_feed_to_s3(feed_path) # ty:ignore
+    content_path = fetch_contents_and_save(aws_key) # ty:ignore
+    upload_content_to_s3(content_path) # ty:ignore
 
 
 ingestion_dag()
