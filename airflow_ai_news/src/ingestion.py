@@ -109,7 +109,7 @@ async def fetch_contents(aws_key: str) -> Path:
             "article_id": id,
             "content": content,
             "ingested_at": ingestion_timestamp
-        } for id, content in zip(feed_df["article_id"].values, contents)
+        } for id, content in zip(feed_df["article_id"].values, contents) if content != "" and content is not None
     ]
 
     logger.info(f"Contents scrapped at: {ingestion_timestamp.strftime("%d/%m/%Y %H:%M:%S")}")

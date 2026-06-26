@@ -19,24 +19,22 @@ content as
         GROUP BY article_id
     ) AS c2
     ON c1.article_id = c2.article_id AND c1.ingested_at = c2.min_ingested
-),
-articles as
-(
-    SELECT
-        feed.article_id,
-        feed.title,
-        feed.link,
-        feed.author,
-        feed.published_parsed AS published,
-        feed.summary,
-        feed.source,
-        feed.ingested_at AS feed_ingestion,
-        content.content,
-        content.ingested_at AS content_ingestion
-    FROM feed
-    INNER JOIN content
-    ON feed.article_id = content.article_id
 )
 
-SELECT *
-FROM articles
+
+SELECT
+    feed.article_id,
+    feed.title,
+    feed.link,
+    feed.author,
+    feed.published_parsed AS published,
+    feed.summary,
+    feed.source,
+    feed.ingested_at AS feed_ingestion,
+    content.content,
+    content.ingested_at AS content_ingestion
+FROM feed
+INNER JOIN content
+ON feed.article_id = content.article_id
+
+

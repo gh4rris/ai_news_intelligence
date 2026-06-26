@@ -12,6 +12,7 @@ st.set_page_config(
 )
 
 st.title("Topic Trends")
+st.subheader("Article topics over time")
 
 
 def get_topics_between(from_date: date, to_date: date) -> DataFrame:

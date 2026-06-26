@@ -49,6 +49,7 @@ col1, col2 = st.columns(2)
 
 if submit:
     df = get_summary_data(selected_date)
+
     if len(df) >= 1:
         display(df, selected_date)
     else:

@@ -12,6 +12,8 @@ st.set_page_config(
 )
 
 st.title("Entity Trends")
+st.subheader("Track organization, people and product mentions")
+
 
 def get_day_entities(selected_date: date, entity_type: str, min_mentions: int) -> DataFrame:
     return db_query(f"""
@@ -20,25 +22,32 @@ def get_day_entities(selected_date: date, entity_type: str, min_mentions: int) -
     WHERE published_date = ?
     AND (entity_label = ? OR ? = 'ALL')
     AND mention_count >= ?
-    ORDER BY mention_count DESC
+    ORDER BY mention_count ASC
     """, [selected_date, entity_type, entity_type, min_mentions])
 
 
 def get_entities_beetween(from_date: date, to_date: date, entity_type: str, min_mentions: int) -> DataFrame:
     return db_query(f"""
-    SELECT *
+    WITH grouped AS
+    (
+        SELECT entity_label, entity_text, SUM(mention_count) AS total_mention_count
+        FROM {DATABRICKS_CATALOG}.gold.entity_trends
+        GROUP BY entity_label, entity_text
+    )
 
-    FROM {DATABRICKS_CATALOG}.gold.entity_trends
+    SELECT et.published_date, et.entity_label, et.entity_text, et.mention_count, et.dominant_sentiment, g.total_mention_count
+    FROM {DATABRICKS_CATALOG}.gold.entity_trends AS et
+    INNER JOIN grouped AS g
+    ON et.entity_label = g.entity_label AND et.entity_text = g.entity_text
     WHERE published_date BETWEEN ? AND ?
-    AND (entity_label = ? OR ? = 'ALL')
-    AND mention_count >= ?
-    ORDER BY mention_count DESC
+    AND (et.entity_label = ? OR ? = 'ALL')
+    AND total_mention_count >= ?
+    ORDER BY total_mention_count ASC
     """, [from_date, to_date, entity_type, entity_type, min_mentions])
 
 
-def display(df: DataFrame, title: str) -> None:
-    st.dataframe(df)
-    fig = px.bar(df.sort_values("mention_count", ascending=True),
+def bar_display(df: DataFrame, title: str) -> None:
+    fig = px.bar(df,
                  x="mention_count", y="entity_text",
                  orientation="h", color="dominant_sentiment",
                  color_discrete_map={
@@ -46,6 +55,12 @@ def display(df: DataFrame, title: str) -> None:
                     "NEGATIVE": "red"
                  },
                  title=title)
+    st.plotly_chart(fig)
+
+
+def line_display(df: DataFrame, title: str) -> None:
+    fig = px.line(df, x="published_date", y="mention_count",
+                  color="entity_text", title=title)
     st.plotly_chart(fig)
 
 
@@ -60,25 +75,30 @@ date_format = col1.radio("Date", ["Day", "Between"], horizontal=True)
 
 match entity_type:
     case "ORG":
-        type_string = "Organsation"
+        type_string = "Organsation "
     case "PERSON":
-        type_string = "Person"
+        type_string = "Person "
     case "PRODUCT":
-        type_string = "Product"
+        type_string = "Product "
     case "ALL":
-        type_string = "of all"
+        type_string = ""
 
 if date_format == "Day":
     selected_date = col3.date_input("Date", datetime.today())
+
     if submit_button:
         title = f"Most Mentioned {type_string} Entities: {selected_date.strftime("%d/%m/%Y")} (min {min_mentions})"
         df = get_day_entities(selected_date, entity_type, min_mentions)
-        display(df, title)
+        bar_display(df, title)
+
 if date_format == "Between":
     from_date = col3.date_input("From", datetime.today() - timedelta(days=30))
     to_date = col4.date_input("To", datetime.today())
+
     if submit_button:
-        title = f"Most Mentioned {type_string} Entities Between {from_date.strftime("%d/%m/%Y")} and {to_date.strftime("%d/%m/%Y")} (min {min_mentions})"
+        bar_title = f"Total {type_string}Entity Mentions Between {from_date.strftime("%d/%m/%Y")} and {to_date.strftime("%d/%m/%Y")} (period min {min_mentions})"
+        line_title = f"Daily {type_string}Entity Mentions Between {from_date.strftime("%d/%m/%Y")} and {to_date.strftime("%d/%m/%Y")} (period min {min_mentions})"
         df = get_entities_beetween(from_date, to_date, entity_type, min_mentions)
-        display(df, title)
+        bar_display(df, bar_title)
+        line_display(df, line_title)
 

@@ -15,9 +15,9 @@ def get_connection() -> Connection:
         access_token=DATABRICKS_ACCESS_TOKEN
     )
 
-def db_query(query: str, params: list | None) -> DataFrame:
+def db_query(query: str, params: list=[]) -> DataFrame:
     conn = get_connection()
     with conn.cursor() as cur:
-        cur.execute(query, params or [])
+        cur.execute(query, params)
         result: Table = cur.fetchall_arrow()
         return result.to_pandas()
