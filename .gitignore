@@ -5,8 +5,13 @@ build/
 dist/
 wheels/
 *.egg-info
-.env
-.vscode
 
 # Virtual environments
 .venv
+
+# cache
+.ruff_cache
+.pytest_cache
+
+# other
+.env

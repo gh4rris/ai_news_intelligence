@@ -5,8 +5,15 @@ build/
 dist/
 wheels/
 *.egg-info
-logs/
-data/
 
 # Virtual environments
 .venv
+
+# cache
+.ruff_cache
+.pytest_cache
+
+# other
+logs/
+data/
+.env

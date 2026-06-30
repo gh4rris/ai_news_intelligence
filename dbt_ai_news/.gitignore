@@ -1,8 +1,5 @@
-
 target/
 dbt_packages/
 logs/
 profiles.yml
 .user.yml
-.vscode
-.env

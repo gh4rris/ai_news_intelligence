@@ -13,6 +13,7 @@ PAGES_PATH = ROOT_PATH / "pages"
 DAILY_SUMMARY = PAGES_PATH / "daily_summary.py"
 TOPIC_TRENDS = PAGES_PATH / "topic_trends.py"
 ENTITY_TRENDS = PAGES_PATH / "entity_trends.py"
+SOURCE_PROFILES = PAGES_PATH / "source_profiles.py"
 DATA_EXPLORATION = PAGES_PATH / "data_exploration.py"
 
 # databricks

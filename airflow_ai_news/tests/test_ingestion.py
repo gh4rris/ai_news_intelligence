@@ -67,3 +67,4 @@ async def test_fetch_article_content(status, text, expected, mocker: MockFixture
         result = await fetch_article_content(session, semaphore, "http://test.com")
 
     assert result == expected
+    
