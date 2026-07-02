@@ -73,7 +73,7 @@ models:
     data_tests:
       - unique:
           arguments:
-            column_name:  "(published_date || entity_label || entity_text)"
+            column_name: "(published_date || entity_label || entity_text)"
     columns:
       - name: published_date
         data_tests:
@@ -92,6 +92,37 @@ models:
           - not_null
           - non_negative
       - name: dominant_sentiment
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["POSITIVE", "NEGATIVE"]
+
+  - name: source_profiles
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "(published_date || source)"
+    columns:
+      - name: published_date
+        data_tests:
+          - not_null
+          - unique
+      - name: source
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["TechCrunch", "The Verge", "Wired", "MIT Technology Review"]
+      - name: article_count
+        data_tests:
+          - not_null
+          - non_negative
+      - name: avg_word_count
+        data_tests:
+          - not_null
+          - non_negative
+      - name: dominant_source
         data_tests:
           - not_null
           - accepted_values:

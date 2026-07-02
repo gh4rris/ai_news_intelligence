@@ -36,10 +36,37 @@ jobs:
     - name: Lint with Ruff
       run: |
         cd airflow_ai_news/
-        uv run ruff check
+        uv run ruff check .
 
     - name: Type check with ty
       run: |
         cd airflow_ai_news/
-        uv run ty check
+        uv run ty check .
 
+  streamlit:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v6
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v6
+      with:
+        python-version-file: ".python-version"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with: 
+        version: 0.11.15
+
+    - name: Lint with Ruff
+      run: |
+        cd streamlit_ai_news/
+        uv run ruff check .
+
+    - name: Type check with ty
+      run: |
+        cd streamlit_ai_news/
+        uv run ty check .

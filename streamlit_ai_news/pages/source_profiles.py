@@ -25,7 +25,7 @@ def get_sources_between(from_date: date, to_date: date) -> DataFrame:
 
 def display(df: DataFrame, from_date: str, to_date: str) -> None:
     fig = px.bar(
-        df, x="source", y="article_count", color="dominant_dentiment",
+        df, x="source", y="article_count", color="dominant_sentiment", barmode="group",
         title=f"Article Count by Source and Sentiment between {from_date} and {to_date}"
     )
     st.plotly_chart(fig)

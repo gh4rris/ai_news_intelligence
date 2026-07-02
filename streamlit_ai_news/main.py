@@ -10,7 +10,7 @@ def main():
     source_profiles = st.Page(SOURCE_PROFILES, title="Source Profiles")
     data_exploration = st.Page(DATA_EXPLORATION, title="Data Exploration")
 
-    pages = st.navigation([daily_summary, topic_trends, entity_trends, data_exploration, source_profiles])
+    pages = st.navigation([daily_summary, topic_trends, entity_trends, source_profiles, data_exploration])
 
     pages.run()
 

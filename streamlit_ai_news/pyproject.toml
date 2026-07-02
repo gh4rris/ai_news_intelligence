@@ -10,3 +10,9 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "streamlit>=1.57.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.20",
+    "ty>=0.0.55",
+]

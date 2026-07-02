@@ -1,4 +1,4 @@
-from config import DATABRICKS_HOST, DATABRICKS_HTTP_PATH, DATABRICKS_ACCESS_TOKEN
+from config import DATABRICKS_HOST, DATABRICKS_HTTP_PATH, DATABRICKS_CLIENT_ID, DATABRICKS_CLIENT_SECRET
 
 import streamlit as st
 from databricks import sql
@@ -12,7 +12,8 @@ def get_connection() -> Connection:
     return sql.connect(
         server_hostname=DATABRICKS_HOST,
         http_path=DATABRICKS_HTTP_PATH,
-        access_token=DATABRICKS_ACCESS_TOKEN
+        client_id=DATABRICKS_CLIENT_ID,
+        client_secret=DATABRICKS_CLIENT_SECRET
     )
 
 def db_query(query: str, params: list=[]) -> DataFrame:

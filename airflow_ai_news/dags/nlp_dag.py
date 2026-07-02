@@ -8,7 +8,7 @@ from docker.types import Mount
 
 @dag(
     dag_id="nlp_dag",
-    start_date=datetime(year=2026, month=6, day=16, tz="Europe/London"),
+    start_date=datetime(year=2026, month=7, day=1, tz="Europe/London"),
     schedule=None,
     catchup=False
 )
