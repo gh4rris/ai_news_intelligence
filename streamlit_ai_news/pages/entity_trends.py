@@ -1,4 +1,3 @@
-from config import DATABRICKS_CATALOG
 from utils import db_query
 
 import streamlit as st
@@ -18,7 +17,7 @@ st.subheader("Track organization, people and product mentions")
 def get_day_entities(selected_date: date, entity_type: str, min_mentions: int) -> DataFrame:
     return db_query(f"""
     SELECT *
-    FROM {DATABRICKS_CATALOG}.gold.entity_trends
+    FROM {st.secrets["catalog"]}.gold.entity_trends
     WHERE published_date = ?
     AND (entity_label = ? OR ? = 'ALL')
     AND mention_count >= ?
@@ -31,12 +30,12 @@ def get_entities_beetween(from_date: date, to_date: date, entity_type: str, min_
     WITH grouped AS
     (
         SELECT entity_label, entity_text, SUM(mention_count) AS total_mention_count
-        FROM {DATABRICKS_CATALOG}.gold.entity_trends
+        FROM {st.secrets["catalog"]}.gold.entity_trends
         GROUP BY entity_label, entity_text
     )
 
     SELECT et.published_date, et.entity_label, et.entity_text, et.mention_count, et.dominant_sentiment, g.total_mention_count
-    FROM {DATABRICKS_CATALOG}.gold.entity_trends AS et
+    FROM {st.secrets["catalog"]}.gold.entity_trends AS et
     INNER JOIN grouped AS g
     ON et.entity_label = g.entity_label AND et.entity_text = g.entity_text
     WHERE published_date BETWEEN ? AND ?

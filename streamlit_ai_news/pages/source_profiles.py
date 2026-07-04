@@ -1,4 +1,3 @@
-from config import DATABRICKS_CATALOG
 from utils import db_query
 
 import streamlit as st
@@ -17,7 +16,7 @@ st.subheader("Analysing article sources")
 def get_sources_between(from_date: date, to_date: date) -> DataFrame:
     return db_query(f"""
     SELECT *
-    FROM {DATABRICKS_CATALOG}.gold.source_profiles
+    FROM {st.secrets["catalog"]}.gold.source_profiles
     WHERE published_date BETWEEN ? AND ?
     ORDER BY published_date
     """, [from_date, to_date])
@@ -26,6 +25,10 @@ def get_sources_between(from_date: date, to_date: date) -> DataFrame:
 def display(df: DataFrame, from_date: str, to_date: str) -> None:
     fig = px.bar(
         df, x="source", y="article_count", color="dominant_sentiment", barmode="group",
+        color_discrete_map={
+            "POSITIVE": "green",
+            "NEGATIVE": "red"
+        },
         title=f"Article Count by Source and Sentiment between {from_date} and {to_date}"
     )
     st.plotly_chart(fig)

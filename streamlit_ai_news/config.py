@@ -1,9 +1,5 @@
-import os
 from pathlib import Path
-from dotenv import load_dotenv
 
-
-load_dotenv()
 
 # paths
 ROOT_PATH = Path(__file__).parent
@@ -15,10 +11,3 @@ TOPIC_TRENDS = PAGES_PATH / "topic_trends.py"
 ENTITY_TRENDS = PAGES_PATH / "entity_trends.py"
 SOURCE_PROFILES = PAGES_PATH / "source_profiles.py"
 DATA_EXPLORATION = PAGES_PATH / "data_exploration.py"
-
-# databricks
-DATABRICKS_HOST = os.getenv("DATABRICKS_HOST")
-DATABRICKS_HTTP_PATH = os.getenv("DATABRICKS_HTTP_PATH")
-DATABRICKS_CLIENT_ID = os.getenv("DATABRICKS_CLIENT_ID")
-DATABRICKS_CLIENT_SECRET = os.getenv("DATABRICKS_CLIENT_SECRET")
-DATABRICKS_CATALOG = os.getenv("DATABRICKS_CATALOG")

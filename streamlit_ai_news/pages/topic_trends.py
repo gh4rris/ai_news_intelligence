@@ -1,4 +1,3 @@
-from config import DATABRICKS_CATALOG
 from utils import db_query
 
 import streamlit as st
@@ -18,7 +17,7 @@ st.subheader("Article topics over time")
 def get_topics_between(from_date: date, to_date: date) -> DataFrame:
     return db_query(f"""
     SELECT *
-    FROM {DATABRICKS_CATALOG}.gold.topic_trends
+    FROM {st.secrets["catalog"]}.gold.topic_trends
     WHERE published_date BETWEEN ? AND ?
     ORDER BY published_date
     """, [from_date, to_date])

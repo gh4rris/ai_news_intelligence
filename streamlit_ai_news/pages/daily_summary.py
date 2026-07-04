@@ -1,4 +1,3 @@
-from config import DATABRICKS_CATALOG
 from utils import db_query
 
 import streamlit as st
@@ -17,7 +16,7 @@ st.title("Daily Summary")
 def get_summary_data(selected_date: date) -> DataFrame:
     return db_query(f"""
     SELECT *
-    FROM {DATABRICKS_CATALOG}.gold.daily_summary
+    FROM {st.secrets["catalog"]}.gold.daily_summary
     WHERE published_date = ?
     ORDER BY published_date
     """, [selected_date])

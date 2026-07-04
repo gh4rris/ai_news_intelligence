@@ -1,4 +1,4 @@
-from ingestion import generate_article_id, parse_date, save_to_parquet, upload_to_s3, fetch_article_content
+from ingestion import generate_article_id, parse_date, filter_feed, save_to_parquet, upload_to_s3, fetch_article_content
 
 import pytest
 from unittest.mock import AsyncMock
@@ -7,7 +7,7 @@ import aiohttp
 import asyncio
 from pytest_mock import MockFixture
 from feedparser import FeedParserDict
-from pendulum import DateTime, Timezone
+from pendulum import DateTime, Timezone, datetime
 from pathlib import Path
 
 
@@ -25,6 +25,26 @@ def test_parse_date(time_struct, expected):
     fpd = FeedParserDict()
     fpd["published_parsed"] = time_struct
     assert parse_date(fpd) == expected
+
+
+def test_filter_feed():
+    data = [
+        {"published_parsed": datetime(year=2026, month=1, day=1)},
+        {"published_parsed": datetime(year=2026, month=1, day=2)},
+        {"published_parsed": datetime(year=2026, month=1, day=4)},
+        {"published_parsed": datetime(year=2026, month=1, day=1, hour=1)},
+        {"published_parsed": datetime(year=2026, month=1, day=1, hour=0, minute=0, second=1)},
+        {"published_parsed": None}
+    ]
+    ingested = datetime(year=2026, month=1, day=4)
+
+    expected = [
+        {"published_parsed": datetime(year=2026, month=1, day=2)},
+        {"published_parsed": datetime(year=2026, month=1, day=4)},
+        {"published_parsed": datetime(year=2026, month=1, day=1, hour=1)},
+        {"published_parsed": datetime(year=2026, month=1, day=1, hour=0, minute=0, second=1)}
+    ]
+    assert filter_feed(data, ingested) == expected
 
 
 def test_save_to_parquet(mocker: MockFixture):

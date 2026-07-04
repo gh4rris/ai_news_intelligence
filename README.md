@@ -2,6 +2,8 @@
 
 Data engineering pipeline that scrapes AI related news articles from multiple sources, enriches with NLP and analyses for insights.
 
+**Live dashboard:** [https://ainewsintelligence-qsfysdaxgs5c5mdj7ob9mt.streamlit.app/](https://ainewsintelligence-qsfysdaxgs5c5mdj7ob9mt.streamlit.app/)
+
 
 ## Architecture
 

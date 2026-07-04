@@ -44,9 +44,9 @@ SELECT
 	wa.published_date,
 	wa.topic,
 	wa.article_count,
-	CASE WHEN CAST(wa.published_date AS DATE) < DATEADD(DAY, 1, MIN(wa.published_date) OVER ()) THEN NULL
+	CASE WHEN CAST(wa.published_date AS DATE) < CAST(DATEADD(DAY, 6, MIN(wa.published_date) OVER ()) AS DATE) THEN NULL
 	ELSE ROUND(wa.prev_7d_avg_articles, 2) END AS prev_7d_avg_articles,
-	CASE WHEN CAST(wa.published_date AS DATE) < DATEADD(DAY, 1, MIN(wa.published_date) OVER ()) THEN NULL
+	CASE WHEN CAST(wa.published_date AS DATE) < CAST(DATEADD(DAY, 6, MIN(wa.published_date) OVER ()) AS DATE) THEN NULL
 	ELSE ROUND((wa.article_count - wa.prev_7d_avg_articles) / NULLIF(wa.prev_7d_avg_articles, 0), 2) END AS momentum,
 	wa.dominant_sentiment
 FROM  week_avg AS wa

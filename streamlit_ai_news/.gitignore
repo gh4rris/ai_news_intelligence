@@ -10,4 +10,4 @@ wheels/
 .venv
 
 # other
-.env
+.streamlit/

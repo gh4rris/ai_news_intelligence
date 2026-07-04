@@ -1,3 +1,4 @@
+from typing import cast
 from config import RSS_FEED, MAX_CONCURRENT, REQUEST_TIMEOUT, FEED_PATH, CONTENT_PATH, AWS_BUCKET
 from utils import run_async
 
@@ -37,7 +38,6 @@ def fetch_feed_entries() -> Path:
                 "link": entry.get("link", ""),
                 "authors": json.dumps(entry.get("authors", [])),
                 "author": entry.get("author", ""),
-                "published": entry.get("published"),
                 "published_parsed": parse_date(entry),
                 "tags": json.dumps(entry.get("tags", [])),
                 "id": entry.get("id", ""),
@@ -50,9 +50,10 @@ def fetch_feed_entries() -> Path:
         
         total_feed_entries.extend(feed_entries)
         logger.info(f"{source_name} feed scrapped")
-    
+
+    filtered_feed_entries = filter_feed(total_feed_entries, ingestion_timestamp)
     logger.info(f"RSS feed scrapped at: {ingestion_timestamp.strftime("%d/%m/%Y %H:%M:%S")}")
-    return save_to_parquet(total_feed_entries, ingestion_timestamp, FEED_PATH)
+    return save_to_parquet(filtered_feed_entries, ingestion_timestamp, FEED_PATH)
 
 
 def generate_article_id(url: str) -> str:
@@ -63,6 +64,13 @@ def parse_date(article: FeedParserDict) -> DateTime | None:
     if article.get("published_parsed"):
         return datetime(*article["published_parsed"][:6])
     return None
+
+
+def filter_feed(data: list[dict], ingested: DateTime) -> list[dict]:
+    return [
+        entry for entry in data if entry["published_parsed"] is not None
+        and (ingested - cast(DateTime, entry["published_parsed"])).days < 3
+    ]
 
 
 def save_to_parquet(data: list[dict], ingested_at: DateTime, path: Path) -> Path:
