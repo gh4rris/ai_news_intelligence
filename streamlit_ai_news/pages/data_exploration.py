@@ -26,7 +26,7 @@ def get_filtered_day(source: str, selected_date: date, keyphrase: str) -> DataFr
 def get_filtered_between(source: str, from_date: date, to_date: date, keyphrase: str) -> DataFrame:
     return db_query(f"""
     SELECT title, link, author, published, summary, source
-    FROM {DATABRICKS_CATALOG}.silver.articles
+    FROM {st.secrets["catalog"]}.silver.articles
     WHERE (source = ? OR 'All' = ?)
     AND published BETWEEN ? AND ?
     AND (title ILIKE ? OR summary ILIKE ?)
