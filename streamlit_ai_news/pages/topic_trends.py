@@ -39,8 +39,9 @@ def display(df: DataFrame, from_date: str, to_date: str) -> None:
 
 col1, col2 = st.columns(2)
 
-from_date = col1.date_input("From", value=datetime.today() - timedelta(days=30))
-to_date = col2.date_input("To", value=datetime.today())
+yesterday = datetime.today() - timedelta(days=1)
+from_date = col1.date_input("From", value=yesterday - timedelta(days=30))
+to_date = col2.date_input("To", value=yesterday)
 
 if st.button("Submit"):
     topics_df = get_topics_between(from_date, to_date)

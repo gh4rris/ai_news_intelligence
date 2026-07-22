@@ -4,6 +4,7 @@ Data engineering pipeline that scrapes AI related news articles from multiple so
 
 **Live dashboard:** [https://ainewsintelligence-qsfysdaxgs5c5mdj7ob9mt.streamlit.app/](https://ainewsintelligence-qsfysdaxgs5c5mdj7ob9mt.streamlit.app/)
 
+![daily summary](./docs/daily_summary.png)
 
 ## Architecture
 
@@ -13,6 +14,7 @@ Bronze, Silver and Gold live in Databricks as delta tables. The bronze layer has
 
 NLP enrichment is written directly in python using the Databricks SQL connector, since model inference can't be handled in SQL. All other transformations are handled id dbt.
 
+![topic trends](./docs/topic_trends.png)
 
 ## Tech Stach
 
@@ -24,6 +26,7 @@ NLP enrichment is written directly in python using the Databricks SQL connector,
 - **Transformation:** dbt
 - **Dashboard:** Streamlit
 
+![entity trends](./docs/entity_trends.png)
 
 ## Airflow Dags
 

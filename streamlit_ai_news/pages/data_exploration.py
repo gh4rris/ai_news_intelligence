@@ -42,17 +42,20 @@ keyphrase = col1.text_input("Keyphrase")
 keyphrase = f"%{keyphrase}%"
 date_format = col1.radio("Date", ["Day", "Between"], horizontal=True)
 
+yesterday = datetime.today() - timedelta(days=1)
+
 if date_format == "Day":
-    selected_date = col3.date_input("Date", datetime.today())
+    selected_date = col3.date_input("Date", yesterday)
 
     if submit_button:
         df = get_filtered_day(source, selected_date, keyphrase)
         st.dataframe(df)
 
 if date_format == "Between":
-    from_date = col3.date_input("From", datetime.today() - timedelta(days=30))
-    to_date = col4.date_input("To", datetime.today())
+    from_date = col3.date_input("From", yesterday - timedelta(days=30))
+    to_date = col4.date_input("To", yesterday)
 
     if submit_button:
         df = get_filtered_between(source, from_date, to_date, keyphrase)
         st.dataframe(df)
+        
