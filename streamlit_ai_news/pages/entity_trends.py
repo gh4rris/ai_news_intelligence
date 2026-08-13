@@ -83,10 +83,10 @@ match entity_type:
         type_string = ""
 
 
-yesterday = datetime.today() - timedelta(days=1)
+today = datetime(year=2026, month=8, day=12)
 
 if date_format == "Day":
-    selected_date = col3.date_input("Date", yesterday)
+    selected_date = col3.date_input("Date", today)
 
     if submit_button:
         title = f"Most Mentioned {type_string} Entities: {selected_date.strftime("%d/%m/%Y")} (min {min_mentions})"
@@ -94,8 +94,8 @@ if date_format == "Day":
         bar_display(df, title)
 
 if date_format == "Between":
-    from_date = col3.date_input("From", yesterday - timedelta(days=30))
-    to_date = col4.date_input("To", yesterday)
+    from_date = col3.date_input("From", today - timedelta(days=30))
+    to_date = col4.date_input("To", today)
 
     if submit_button:
         bar_title = f"Total {type_string}Entity Mentions Between {from_date.strftime("%d/%m/%Y")} and {to_date.strftime("%d/%m/%Y")} (period min {min_mentions})"

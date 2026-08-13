@@ -2,7 +2,7 @@ from utils import db_query
 
 import streamlit as st
 import plotly.express as px
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from pandas import DataFrame
 
 
@@ -40,7 +40,7 @@ def display(df: DataFrame, selected_date: date) -> None:
     st.plotly_chart(fig)
 
 
-selected_date = st.date_input("Select a date", value=datetime.today() - timedelta(days=1))
+selected_date = st.date_input("Select a date", value=datetime(year=2026, month=8, day=12))
 submit = st.button("Submit")
 container = st.container()
 col1, col2 = st.columns(2)
