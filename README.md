@@ -4,6 +4,8 @@ Data engineering pipeline that scrapes AI related news articles from multiple so
 
 **Live dashboard:** [https://ainewsintelligence-qsfysdaxgs5c5mdj7ob9mt.streamlit.app/](https://ainewsintelligence-qsfysdaxgs5c5mdj7ob9mt.streamlit.app/)
 
+YouTube Walkthrough: [https://youtu.be/AZn8Bab-Tvg](https://youtu.be/AZn8Bab-Tvg)
+
 ![daily summary](./docs/daily_summary.png)
 
 ## Architecture
